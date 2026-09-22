@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projectiles: Target Intercept & Kinematics Studio - The Thinking Experiment</title>
+  <meta name="description" content="Interactive 2D projectile kinematics simulation featuring Feed the Monkey, Mark Rober's automated dartboard, and classroom Cornell T-Chart problem solving.">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="brand-group">
+          <span class="brand-kicker">The Thinking Experiment</span>
+          <h1 class="brand-title">Projectiles: Target Intercept &amp; Kinematics Studio</h1>
+          <p class="brand-subtitle">Interactive 2D kinematics modeling: Feed the Monkey inquiry, Mark Rober's automated dartboard, and classroom Cornell T-Chart analysis.</p>
+        </div>
+        <div class="header-badges">
+          <span class="badge badge-teal">PhysicsKit 2D</span>
+          <span class="badge badge-amber" id="modeBadge">Mode: Feed the Monkey</span>
+        </div>
+      </div>
+
+      <!-- Mode Selector Tabs -->
+      <nav class="mode-tabs" role="tablist" aria-label="Simulation Modes">
+        <button type="button" class="mode-tab active" data-mode="monkey" role="tab" aria-selected="true">
+          <span class="tab-icon">🐵</span>
+          <span class="tab-label">Feed the Monkey</span>
+        </button>
+        <button type="button" class="mode-tab" data-mode="mark-rober" role="tab" aria-selected="false">
+          <span class="tab-icon">🎯</span>
+          <span class="tab-label">Mark Rober Dartboard</span>
+        </button>
+        <button type="button" class="mode-tab" data-mode="classroom" role="tab" aria-selected="false">
+          <span class="tab-icon">📋</span>
+          <span class="tab-label">Classroom Notes &amp; Obstacle</span>
+        </button>
+        <button type="button" class="mode-tab" data-mode="sandbox" role="tab" aria-selected="false">
+          <span class="tab-icon">🧪</span>
+          <span class="tab-label">Free Sandbox</span>
+        </button>
+      </nav>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <main class="sim-workspace">
+      <!-- Left Column: Simulation Canvas & Controls -->
+      <section class="stage-section">
+        <!-- Canvas Stage Card -->
+        <div class="card stage-card">
+          <div class="stage-topbar">
+            <div class="stage-indicators">
+              <span class="status-pill status-ready" id="statusPill">Ready to Launch</span>
+              <span class="status-text" id="statusMessage">Aim directly at the monkey and observe the free-fall intercept!</span>
+            </div>
+            <div class="stage-toggles">
+              <button type="button" class="tool-btn active" id="toggleTargetLine" title="Toggle Line of Sight">Line of Sight</button>
+              <button type="button" class="tool-btn active" id="toggleStrobes" title="Toggle Strobe Dots (0.1s)">Strobes</button>
+              <button type="button" class="tool-btn active" id="toggleVectors" title="Toggle Velocity Vectors">Vectors</button>
+              <button type="button" class="tool-btn" id="toggleGrid" title="Toggle Metric Grid">Grid</button>
+              <button type="button" class="tool-btn" id="toggleZeroG" title="Toggle Zero-G Reference Ghost">Zero-G Ghost</button>
+              <button type="button" class="tool-btn" id="toggleAudio" title="Toggle Sound Effects">🔊</button>
+            </div>
+          </div>
+
+          <!-- Canvas Container -->
+          <div class="canvas-viewport" id="canvasViewport">
+            <canvas id="simCanvas" width="900" height="520"></canvas>
+            <div class="canvas-overlay-hints" id="overlayHints">
+              <span>💡 Drag cannon barrel or target handle directly on the screen</span>
+            </div>
+          </div>
+
+          <!-- Simulation Playback Bar -->
+          <div class="playback-bar">
+            <div class="playback-actions">
+              <button type="button" class="btn btn-primary" id="btnFire">
+                <span class="btn-icon">🚀</span> <span id="btnFireText">Fire Cannon</span>
+              </button>
+              <button type="button" class="btn btn-secondary" id="btnPause" disabled>
+                <span class="btn-icon">❚❚</span> Pause
+              </button>
+              <button type="button" class="btn btn-secondary" id="btnStep" title="Step +0.05s">
+                <span class="btn-icon">⏭</span> Step (+0.05s)
+              </button>
+              <button type="button" class="btn btn-outline" id="btnReset">
+                <span class="btn-icon">↺</span> Reset
+              </button>
+            </div>
+
+            <div class="playback-speed">
+              <label for="speedSelect">Speed:</label>
+              <select id="speedSelect" class="select-input">
+                <option value="0.10">0.10× (Super Slow-Mo)</option>
+                <option value="0.25">0.25× (Slow Motion)</option>
+                <option value="0.50">0.50× (Half Speed)</option>
+                <option value="1.00" selected>1.00× (Real Time)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Real-Time Telemetry Card -->
+        <div class="card telemetry-card">
+          <h3 class="card-title">Live Telemetry &amp; Kinematic State</h3>
+          <div class="telemetry-grid">
+            <div class="tele-item">
+              <span class="tele-label">Time (t)</span>
+              <span class="tele-val" id="teleTime">0.00 s</span>
+            </div>
+            <div class="tele-item">
+              <span class="tele-label">Position (x, y)</span>
+              <span class="tele-val" id="telePos">(0.0 m, 0.0 m)</span>
+            </div>
+            <div class="tele-item">
+              <span class="tele-label">Velocity (vₓ, vᵧ)</span>
+              <span class="tele-val" id="teleVel">(0.0, 0.0) m/s</span>
+            </div>
+            <div class="tele-item">
+              <span class="tele-label">Total Speed (|v|)</span>
+              <span class="tele-val" id="teleSpeed">0.0 m/s</span>
+            </div>
+            <div class="tele-item">
+              <span class="tele-label">Target Elevation (y_target)</span>
+              <span class="tele-val" id="teleTargetY">0.0 m</span>
+            </div>
+            <div class="tele-item">
+              <span class="tele-label">Free-Fall Drop (½gt²)</span>
+              <span class="tele-val" id="teleDrop">0.00 m</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trial Data Logger Card -->
+        <div class="card logger-card">
+          <div class="card-header-flex">
+            <h3 class="card-title">Inquiry Trial Logger</h3>
+            <div class="logger-actions">
+              <button type="button" class="btn btn-xs btn-outline" id="btnClearLog">Clear Log</button>
+              <button type="button" class="btn btn-xs btn-primary" id="btnExportCsv">Export CSV</button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="data-table" id="trialTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Mode</th>
+                  <th>v₀ (m/s)</th>
+                  <th>Angle (°)</th>
+                  <th>g (m/s²)</th>
+                  <th>t_hit (s)</th>
+                  <th>Final x (m)</th>
+                  <th>Final y (m)</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody id="trialLogBody">
+                <tr class="empty-row">
+                  <td colspan="9">No recorded trials yet. Fire a projectile to log data!</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Interactive Pedagogical Controls & Cornell T-Chart -->
+      <aside class="controls-section">
+        <!-- Interactive Mode Controls Card -->
+        <div class="card controls-card">
+          <div class="card-header-flex">
+            <h3 class="card-title" id="controlsTitle">Feed the Monkey Controls</h3>
+            <button type="button" class="btn btn-xs btn-outline" id="btnPresetDefault">Reset Defaults</button>
+          </div>
+
+          <!-- Mode 1: Feed the Monkey Controls -->
+          <div class="mode-panel active" id="panelMonkey">
+            <div class="control-group">
+              <div class="control-label-row">
+                <label for="monkeyV0">Initial Speed (v₀):</label>
+                <span class="val-display" id="monkeyV0Val">26.0 m/s</span>
+              </div>
+              <input type="range" id="monkeyV0" min="10" max="45" step="0.5" value="26.0" class="range-slider">
+            </div>
+
+            <div class="control-group">
+              <div class="control-label-row">
+                <label for="monkeyAngle">Launch Angle (θ):</label>
+                <span class="val-display" id="monkeyAngleVal">32.6°</span>
+              </div>
+              <input type="range" id="monkeyAngle" min="-10" max="75" step="0.1" value="32.6" class="range-slider">
+            </div>
+
+            <div class="action-btn-row">
+              <button type="button" class="btn btn-sm btn-outline btn-full" id="btnAutoAimMonkey">
+                🎯 Auto-Aim Directly at Monkey (<span id="autoAimAngleText">32.6°</span>)
+              </button>
+            </div>
+
+            <div class="control-row-split">
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="monkeyDist">Monkey Distance (x_m):</label>
+                  <span class="val-display" id="monkeyDistVal">25.0 m</span>
+                </div>
+                <input type="range" id="monkeyDist" min="15" max="40" step="1" value="25.0" class="range-slider">
+              </div>
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="monkeyHeight">Monkey Height (y_m):</label>
+                  <span class="val-display" id="monkeyHeightVal">16.0 m</span>
+                </div>
+                <input type="range" id="monkeyHeight" min="6" max="25" step="0.5" value="16.0" class="range-slider">
+              </div>
+            </div>
+
+            <div class="control-row-split">
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="cannonHeight">Cannon Height (y₀):</label>
+                  <span class="val-display" id="cannonHeightVal">0.0 m</span>
+                </div>
+                <input type="range" id="cannonHeight" min="0" max="15" step="0.5" value="0.0" class="range-slider">
+              </div>
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="simGravity">Gravity (g):</label>
+                  <span class="val-display" id="simGravityVal">9.80 m/s²</span>
+                </div>
+                <select id="simGravity" class="select-input">
+                  <option value="9.80" selected>Earth (9.80 m/s²)</option>
+                  <option value="10.00">Standard Class (10.0 m/s²)</option>
+                  <option value="1.62">Moon (1.62 m/s²)</option>
+                  <option value="0.00">Zero Gravity (0.00 m/s²)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="callout-box">
+              <strong>💡 Pedagogical Core:</strong> Because gravity accelerates both the banana and monkey downwards at the identical rate ($a_y = -g$), both drop below the line of sight by exactly $\Delta y = \frac{1}{2}gt^2$. Aiming directly at the monkey ensures a hit at <em>any</em> launch speed that reaches before ground impact!
+            </div>
+          </div>
+
+          <!-- Mode 2: Mark Rober Controls -->
+          <div class="mode-panel" id="panelMarkRober">
+            <div class="callout-box" style="margin-top: 0; margin-bottom: 12px;">
+              <strong>🎯 The Problem:</strong> Mark stands at $x_0 = 0$, $y_0 = 1.8\text{ m}$. He throws at $v_0 = 15\text{ m/s}$ at $\alpha = 40^\circ$. A motorized dartboard at $x = 5.0\text{ m}$ slides to intercept the bullseye. What height $H$ must it reach, and does it hit the ceiling?
+            </div>
+
+            <div class="action-btn-row">
+              <button type="button" class="btn btn-sm btn-outline btn-full" id="btnPresetMarkWorksheet">
+                📐 Load Worksheet Problem ($v_0=15\text{ m/s}, \alpha=40^\circ, x=5\text{ m}$)
+              </button>
+            </div>
+
+            <div class="control-group">
+              <div class="control-label-row">
+                <label for="roberV0">Throw Velocity (v₀):</label>
+                <span class="val-display" id="roberV0Val">15.0 m/s</span>
+              </div>
+              <input type="range" id="roberV0" min="5" max="30" step="0.5" value="15.0" class="range-slider">
+            </div>
+
+            <div class="control-group">
+              <div class="control-label-row">
+                <label for="roberAngle">Throw Angle (α):</label>
+                <span class="val-display" id="roberAngleVal">40.0°</span>
+              </div>
+              <input type="range" id="roberAngle" min="10" max="75" step="0.5" value="40.0" class="range-slider">
+            </div>
+
+            <div class="control-row-split">
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="roberBoardX">Board Distance (x):</label>
+                  <span class="val-display" id="roberBoardXVal">5.0 m</span>
+                </div>
+                <input type="range" id="roberBoardX" min="3" max="15" step="0.5" value="5.0" class="range-slider">
+              </div>
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="roberCeiling">Ceiling Height:</label>
+                  <span class="val-display" id="roberCeilingVal">7.0 m</span>
+                </div>
+                <input type="range" id="roberCeiling" min="4" max="12" step="0.5" value="7.0" class="range-slider">
+              </div>
+            </div>
+
+            <div class="control-row-split">
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="roberReleaseY">Release Height (h₀):</label>
+                  <span class="val-display" id="roberReleaseYVal">1.8 m</span>
+                </div>
+                <input type="range" id="roberReleaseY" min="0.5" max="3.0" step="0.1" value="1.8" class="range-slider">
+              </div>
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="roberGravity">Gravity (g):</label>
+                  <span class="val-display" id="roberGravityVal">10.0 m/s²</span>
+                </div>
+                <select id="roberGravity" class="select-input">
+                  <option value="10.00" selected>Worksheet g = 10.0 m/s²</option>
+                  <option value="9.80">Standard g = 9.80 m/s²</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Mark Rober Solution Breakdown Card -->
+            <div class="math-card" id="roberMathCard">
+              <div class="math-header">Worksheet Questions &amp; Live Solution</div>
+              <div class="math-body">
+                <p><strong>1. Target Bullseye Height (H):</strong></p>
+                <div class="math-equation">
+                  t = \frac{x}{v_{0x}} = \frac{<span id="rmX">5.0</span>}{<span id="rmVox">11.49</span>} = <span id="rmT">0.435</span>\text{ s}
+                </div>
+                <div class="math-equation">
+                  H = h_0 + v_{0y}t - \frac{1}{2}gt^2 = <span id="rmH">5.05</span>\text{ m}
+                </div>
+                <p><strong>2. Dart Apex &amp; Ceiling Clearance:</strong></p>
+                <div class="math-equation">
+                  h_{\max} = h_0 + \frac{v_{0y}^2}{2g} = <span id="rmHmax">6.45</span>\text{ m}
+                </div>
+                <div class="math-status-line" id="rmCeilingStatus">
+                  Ceiling at 7.0m &gt; 6.45m &rarr; ✅ Safe clearance!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mode 3: Classroom Notes & Obstacle Controls -->
+          <div class="mode-panel" id="panelClassroom">
+            <div class="preset-pill-group">
+              <button type="button" class="btn btn-xs btn-outline active" id="btnPresetCliff">
+                🏔️ Cliff &amp; Building (p. 7-8, 13-14)
+              </button>
+              <button type="button" class="btn btn-xs btn-outline" id="btnPresetShark">
+                🦈 Shark Pool Horizontal (p. 5, 11)
+              </button>
+            </div>
+
+            <div class="control-row-split">
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="classV0">Launch Speed (v₀):</label>
+                  <span class="val-display" id="classV0Val">42.0 m/s</span>
+                </div>
+                <input type="range" id="classV0" min="5" max="80" step="1" value="42.0" class="range-slider">
+              </div>
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="classAngle">Angle (θ):</label>
+                  <span class="val-display" id="classAngleVal">30.0°</span>
+                </div>
+                <input type="range" id="classAngle" min="0" max="75" step="1" value="30.0" class="range-slider">
+              </div>
+            </div>
+
+            <div class="control-row-split">
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="classCliffH">Cliff Height (h₀):</label>
+                  <span class="val-display" id="classCliffHVal">320 m</span>
+                </div>
+                <input type="range" id="classCliffH" min="0" max="400" step="5" value="320" class="range-slider">
+              </div>
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="classBldgH">Building Height:</label>
+                  <span class="val-display" id="classBldgHVal">70 m</span>
+                </div>
+                <input type="range" id="classBldgH" min="10" max="200" step="5" value="70" class="range-slider">
+              </div>
+            </div>
+
+            <div class="control-row-split">
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="classBldgX1">Building Start (x₁):</label>
+                  <span class="val-display" id="classBldgX1Val">230 m</span>
+                </div>
+                <input type="range" id="classBldgX1" min="50" max="400" step="10" value="230" class="range-slider">
+              </div>
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="classBldgW">Building Width:</label>
+                  <span class="val-display" id="classBldgWVal">80 m</span>
+                </div>
+                <input type="range" id="classBldgW" min="20" max="150" step="5" value="80" class="range-slider">
+              </div>
+            </div>
+
+            <div class="math-card" id="classMathCard">
+              <div class="math-header">Classroom Problem Solutions</div>
+              <div class="math-body">
+                <p><strong>a) Maximum Height:</strong></p>
+                <div class="math-equation">
+                  h_{\max} = y_0 + \frac{v_{0y}^2}{2g} = <span id="cpHmax">342.05</span>\text{ m} \quad (t_{\text{up}} = <span id="cpTup">2.1</span>\text{ s})
+                </div>
+                <p><strong>b) Building Clearance Check (at far edge x = <span id="cpXfar">310</span> m):</strong></p>
+                <div class="math-equation">
+                  t = \frac{x}{v_x} = <span id="cpTfar">8.52</span>\text{ s} \implies y = <span id="cpYfar">135.8</span>\text{ m}
+                </div>
+                <div class="math-status-line" id="cpClearStatus">
+                  ✅ y &gt; 70m: Projectile clears the building!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mode 4: Free Sandbox Controls -->
+          <div class="mode-panel" id="panelSandbox">
+            <div class="control-row-split">
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="sbV0">Speed (v₀):</label>
+                  <span class="val-display" id="sbV0Val">25.0 m/s</span>
+                </div>
+                <input type="range" id="sbV0" min="5" max="60" step="0.5" value="25.0" class="range-slider">
+              </div>
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="sbAngle">Angle (θ):</label>
+                  <span class="val-display" id="sbAngleVal">45.0°</span>
+                </div>
+                <input type="range" id="sbAngle" min="0" max="85" step="0.5" value="45.0" class="range-slider">
+              </div>
+            </div>
+
+            <div class="control-row-split">
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="sbY0">Launch Height (y₀):</label>
+                  <span class="val-display" id="sbY0Val">10.0 m</span>
+                </div>
+                <input type="range" id="sbY0" min="0" max="50" step="1" value="10.0" class="range-slider">
+              </div>
+              <div class="control-group">
+                <div class="control-label-row">
+                  <label for="sbGravity">Gravity (g):</label>
+                  <span class="val-display" id="sbGravityVal">9.80 m/s²</span>
+                </div>
+                <input type="range" id="sbGravity" min="0" max="25" step="0.1" value="9.80" class="range-slider">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cornell Notes T-Chart Card (Pedagogical Source of Truth) -->
+        <div class="card tchart-card">
+          <div class="tchart-header">
+            <h3 class="card-title">Cornell Kinematics T-Chart</h3>
+            <span class="tchart-badge">Classroom Method</span>
+          </div>
+
+          <div class="tchart-grid">
+            <!-- Left Column: Horizontal Motion -->
+            <div class="tchart-col tchart-left">
+              <div class="tchart-col-title">Horizontal (x)</div>
+              <div class="tchart-equation-box">
+                <div class="tchart-law">aₓ = 0 m/s²</div>
+                <div class="tchart-law">vₓ = v₀ₓ = <span id="tcVx">21.9</span> m/s</div>
+                <div class="tchart-formula">x = x₀ + v₀ₓ·t</div>
+                <div class="tchart-eval" id="tcSubX">0.0 + (21.9)·t</div>
+              </div>
+            </div>
+
+            <!-- Central Bridge: Time t -->
+            <div class="tchart-bridge">
+              <div class="bridge-arrow bridge-arrow-left">⮜</div>
+              <div class="bridge-node" title="Time is the shared link connecting both dimensions!">
+                <span class="bridge-t">t</span>
+                <span class="bridge-caption">Bridge</span>
+              </div>
+              <div class="bridge-arrow bridge-arrow-right">⮞</div>
+            </div>
+
+            <!-- Right Column: Vertical Motion -->
+            <div class="tchart-col tchart-right">
+              <div class="tchart-col-title">Vertical (y)</div>
+              <div class="tchart-equation-box">
+                <div class="tchart-law">aᵧ = -g = <span id="tcAy">-9.8</span> m/s²</div>
+                <div class="tchart-formula">vᵧ = v₀ᵧ - g·t</div>
+                <div class="tchart-eval" id="tcSubVy">14.0 - (9.8)·t</div>
+                <div class="tchart-formula">y = y₀ + v₀ᵧ·t - ½·g·t²</div>
+                <div class="tchart-eval" id="tcSubY">0.0 + (14.0)·t - 4.9·t²</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SOH CAHTOA Vector Resolver Card -->
+          <div class="soh-cahtoa-card">
+            <div class="soh-header">Vector Components (SOH CAHTOA)</div>
+            <div class="soh-content">
+              <div class="soh-item">
+                <span class="soh-eq">v₀ₓ = v₀ · cos(θ)</span>
+                <span class="soh-calc" id="sohCalcVx">26.0 · cos(32.6°) = 21.9 m/s</span>
+              </div>
+              <div class="soh-item">
+                <span class="soh-eq">v₀ᵧ = v₀ · sin(θ)</span>
+                <span class="soh-calc" id="sohCalcVy">26.0 · sin(32.6°) = 14.0 m/s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Student Prediction Challenge Card -->
+        <div class="card challenge-card">
+          <div class="card-header-flex">
+            <h3 class="card-title">🎯 Prediction Challenge</h3>
+            <button type="button" class="btn btn-xs btn-outline" id="btnNewChallenge">New Challenge</button>
+          </div>
+          <div class="challenge-body">
+            <p id="challengePrompt">Can you hit the monkey when launch speed is set to 20.0 m/s? Predict where to aim:</p>
+            <div class="challenge-options" id="challengeOptions">
+              <label class="radio-label">
+                <input type="radio" name="monkeyPred" value="above"> Above the monkey
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="monkeyPred" value="below"> Below the monkey
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="monkeyPred" value="direct" checked> Directly at the monkey
+              </label>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary btn-full" id="btnCheckChallenge">Submit &amp; Test Prediction</button>
+            <div class="challenge-feedback" id="challengeFeedback"></div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <p><strong>The Thinking Experiment (PhysicsKit)</strong> &bull; Interactive 2D Kinematics Simulation Studio &bull; Created for high school physics education &amp; inquiry.</p>
+        <p class="footer-palette-note">Classy, minimal, card-based layout adhering to the strict Teal (`#0f7e9b`) and Amber (`#d67b19`) design system.</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="src/projectilesPhysics.js"></script>
+  <script src="src/projectilesApp.js"></script>
+</body>
+</html>
