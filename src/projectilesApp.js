@@ -702,7 +702,18 @@
       setBanner("ready", "MARK ROBER DARTBOARD", "Release dart to see motorized board slide along vertical track to intercept!");
     } else if (state.mode === "classroom") {
       state.classroom.projPos = { x: state.classroom.x0, y: state.classroom.y0 };
-      setBanner("ready", "CLASSROOM NOTES", "Launch from 320m cliff over 70m building. Watch horizontal & vertical kinematics!");
+      const pType = state.classroom.problemType || "cliff-building";
+      if (pType === "tennis") {
+        setBanner("ready", "PROBLEM 49: TENNIS FLAT SERVE", "Horizontal serve from 2.5m at 40 m/s. Check net clearance & service line boundary!");
+      } else if (pType === "soccer") {
+        setBanner("ready", "PROBLEM 48: SOCCER FREE KICK", "Angled kick (vx = 20 m/s, vy = 12 m/s). Test defensive wall clearance & pitch landing!");
+      } else if (pType === "box-drop") {
+        setBanner("ready", "PROBLEM 46: TABLETOP ROLL-OFF", "Horizontal roll-off from 2.0m table at 5 m/s. Compare fall time & landing distance!");
+      } else if (pType === "cliff-100m") {
+        setBanner("ready", "PROBLEM 47: 100M CLIFF LAUNCH", "100m elevated cliff launch. Test motion independence & hit 300m target!");
+      } else {
+        setBanner("ready", "LECTURE NOTES: CLIFF & BUILDING", "Launch from 320m cliff over 70m building. Watch horizontal & vertical kinematics!");
+      }
     } else if (state.mode === "sandbox") {
       state.sandbox.projPos = { x: state.sandbox.x0, y: state.sandbox.y0 };
       setBanner("ready", "FREE SANDBOX", "Adjust velocity, launch angle, and platform height freely.");
@@ -1495,9 +1506,9 @@
       const pType = presetKey || (state.classroom ? state.classroom.problemType : "cliff-building");
       if (pType === "tennis") {
         if (iconEl) iconEl.textContent = "🎾";
-        titleEl.textContent = "Tennis Flat Serve Clearance & Service Box Landing";
+        titleEl.textContent = "Problem 49: Tennis Flat Serve Clearance & Service Box Landing";
         if (subtitleEl) subtitleEl.textContent = "Horizontal projectile launch over net obstacle";
-        tagEl.textContent = "Horizontal Launch";
+        tagEl.textContent = "Problem 49";
         if (qCountEl) qCountEl.textContent = "3 Questions";
         narrativeEl.innerHTML = `A tennis player strikes a horizontal serve (${katex("\\theta = 0^\\circ")}) from baseline height ${katex("y_0 = 2.50\\text{ m}")} at speed ${katex("v_0 = 40.0\\text{ m/s}")}. The net is positioned ${katex("12.0\\text{ m}")} away with height ${katex("0.92\\text{ m}")}, and the legal service court boundary is ${katex("18.4\\text{ m}")} from the server.`;
         listEl.innerHTML = `
@@ -1507,9 +1518,9 @@
         `;
       } else if (pType === "soccer") {
         if (iconEl) iconEl.textContent = "⚽";
-        titleEl.textContent = "Soccer Free Kick over Defensive Wall";
+        titleEl.textContent = "Problem 48: Soccer Free Kick over Defensive Wall";
         if (subtitleEl) subtitleEl.textContent = "Angled ground-to-ground projectile over regulation obstacle";
-        tagEl.textContent = "Angled Projection";
+        tagEl.textContent = "Problem 48";
         if (qCountEl) qCountEl.textContent = "3 Questions";
         narrativeEl.innerHTML = `A soccer player takes a free kick from ground level (${katex("y_0 = 0")}) at initial speed ${katex("v_0 = 23.3\\text{ m/s}")} at an elevation angle of ${katex("\\theta = 31.0^\\circ")} (${katex("v_{0x} = 20.0\\text{ m/s}, v_{0y} = 12.0\\text{ m/s}")}). A defensive wall of height ${katex("2.44\\text{ m}")} stands between ${katex("x = 49.0\\text{ m}")} and ${katex("52.0\\text{ m}")}.`;
         listEl.innerHTML = `
@@ -1519,9 +1530,9 @@
         `;
       } else if (pType === "box-drop") {
         if (iconEl) iconEl.textContent = "📦";
-        titleEl.textContent = "Tabletop Roll-Off Kinematics";
+        titleEl.textContent = "Problem 46: Tabletop Roll-Off Kinematics";
         if (subtitleEl) subtitleEl.textContent = "Horizontal launch from elevated flat surface";
-        tagEl.textContent = "Horizontal Launch";
+        tagEl.textContent = "Problem 46";
         if (qCountEl) qCountEl.textContent = "3 Questions";
         narrativeEl.innerHTML = `A laboratory block slides horizontally off the flat edge of a table at height ${katex("y_0 = 2.00\\text{ m}")} with speed ${katex("v_0 = 5.00\\text{ m/s}")} (${katex("\\theta = 0^\\circ")}).`;
         listEl.innerHTML = `
@@ -1531,9 +1542,9 @@
         `;
       } else if (pType === "cliff-100m") {
         if (iconEl) iconEl.textContent = "⛰️";
-        titleEl.textContent = "100m Elevated Cliff Launch (Target Range)";
+        titleEl.textContent = "Problem 47: 100m Elevated Cliff Launch (Target Range)";
         if (subtitleEl) subtitleEl.textContent = "Determining required horizontal speed for ground target";
-        tagEl.textContent = "Target Range";
+        tagEl.textContent = "Problem 47";
         if (qCountEl) qCountEl.textContent = "3 Questions";
         narrativeEl.innerHTML = `A projectile is launched horizontally (${katex("v_{0y} = 0")}) from the summit of a vertical cliff of height ${katex("y_0 = 100.0\\text{ m}")} toward a ground target at horizontal distance ${katex("x = 300.0\\text{ m}")}.`;
         listEl.innerHTML = `
@@ -1543,9 +1554,9 @@
         `;
       } else {
         if (iconEl) iconEl.textContent = "🏔️";
-        titleEl.textContent = "Cliff Launch over 70m Obstacle Building";
+        titleEl.textContent = "Lecture Notes: Cliff Launch over 70m Obstacle Building";
         if (subtitleEl) subtitleEl.textContent = "Classroom lecture problem: multi-condition clearance & flight";
-        tagEl.textContent = "Classroom Problem";
+        tagEl.textContent = "Lecture Notes";
         if (qCountEl) qCountEl.textContent = "4 Questions";
         narrativeEl.innerHTML = `A projectile is launched from the top edge of a ${katex("320\\text{ m}")} cliff at speed ${katex("v_0 = 42.0\\text{ m/s}")} angled at ${katex("\\theta = 30.0^\\circ")} above horizontal. Standing between ${katex("x = 230\\text{ m}")} and ${katex("x = 310\\text{ m}")} is a building of height ${katex("70.0\\text{ m}")}.`;
         listEl.innerHTML = `
@@ -1853,6 +1864,15 @@
   function drawCannonSprite(x, y, angleDeg) {
     ctx.save();
     ctx.translate(x, y);
+
+    // Aim guide / Drag ring hint (Teal/Amber dashed arc)
+    ctx.strokeStyle = "rgba(214, 123, 25, 0.4)";
+    ctx.setLineDash([3, 3]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, 42, -Math.PI * 0.45, 0.05);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
     // Pedestal
     ctx.fillStyle = "#0f7e9b";
@@ -2350,6 +2370,7 @@
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("monkey", "classic");
+        updatePredictionQuiz();
       });
 
       addPresetPill("Slow Feed (18 m/s)", false, () => {
@@ -2360,6 +2381,7 @@
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("monkey", "slow");
+        updatePredictionQuiz();
       });
 
       addPresetPill("High Fast Feed (40 m/s)", false, () => {
@@ -2370,6 +2392,7 @@
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("monkey", "fast");
+        updatePredictionQuiz();
       });
 
       addPresetPill("Zero-Gravity (g = 0)", false, () => {
@@ -2380,6 +2403,7 @@
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("monkey", "zerog");
+        updatePredictionQuiz();
       });
 
     } else if (state.mode === "mark-rober") {
@@ -2395,6 +2419,7 @@
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("mark-rober", "default");
+        updatePredictionQuiz();
       });
 
       addPresetPill("Low Ceiling Test (5.5m)", false, () => {
@@ -2406,6 +2431,7 @@
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("mark-rober", "low-ceiling");
+        updatePredictionQuiz();
       });
 
       addPresetPill("Long Throw (10m Board)", false, () => {
@@ -2417,13 +2443,16 @@
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("mark-rober", "long-throw");
+        updatePredictionQuiz();
       });
 
     } else if (state.mode === "classroom") {
       btnQuickModeAction.innerHTML = "<span>🏔️</span> Notes: Cliff & Building";
       btnQuickModeAction.style.display = "inline-flex";
 
-      addPresetPill("Cliff & 70m Building (Lecture Notes)", true, () => {
+      const curType = state.classroom.problemType || "cliff-building";
+
+      addPresetPill("🏔️ Lecture Notes: 320m Cliff & 70m Building", curType === "cliff-building", () => {
         state.classroom.problemType = "cliff-building";
         state.classroom.y0 = 320;
         state.classroom.v0 = 42.0;
@@ -2435,51 +2464,10 @@
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("classroom", "cliff-building");
+        updatePredictionQuiz();
       });
 
-      addPresetPill("🎾 Tennis Serve Challenge", false, () => {
-        state.classroom.problemType = "tennis";
-        state.classroom.y0 = 2.5;
-        state.classroom.v0 = 40.0;
-        state.classroom.thetaDeg = 0.0;
-        state.classroom.x1 = 12.0;
-        state.classroom.x2 = 18.4;
-        state.classroom.bldgHeight = 0.92;
-        state.classroom.g = 9.8;
-        syncSliders();
-        resetSimulation();
-        updateInquiryScenarioCard("classroom", "tennis");
-      });
-
-      addPresetPill("⚽ Soccer Kick (20 & 12 m/s)", false, () => {
-        state.classroom.problemType = "soccer";
-        state.classroom.y0 = 0.0;
-        state.classroom.v0 = 23.3;
-        state.classroom.thetaDeg = 31.0;
-        state.classroom.x1 = 49.0;
-        state.classroom.x2 = 52.0;
-        state.classroom.bldgHeight = 2.44;
-        state.classroom.g = 9.8;
-        syncSliders();
-        resetSimulation();
-        updateInquiryScenarioCard("classroom", "soccer");
-      });
-
-      addPresetPill("📦 Box Roll-Off (2m, 5 m/s)", false, () => {
-        state.classroom.problemType = "box-drop";
-        state.classroom.y0 = 2.0;
-        state.classroom.v0 = 5.0;
-        state.classroom.thetaDeg = 0.0;
-        state.classroom.x1 = 0.0;
-        state.classroom.x2 = 0.0;
-        state.classroom.bldgHeight = 0.0;
-        state.classroom.g = 9.8;
-        syncSliders();
-        resetSimulation();
-        updateInquiryScenarioCard("classroom", "box-drop");
-      });
-
-      addPresetPill("⛰️ 100m Cliff Launch (300m range)", false, () => {
+      addPresetPill("⛰️ Problem 47: 100m Cliff Launch", curType === "cliff-100m", () => {
         state.classroom.problemType = "cliff-100m";
         state.classroom.y0 = 100.0;
         state.classroom.v0 = 66.4;
@@ -2491,6 +2479,52 @@
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("classroom", "cliff-100m");
+        updatePredictionQuiz();
+      });
+
+      addPresetPill("⚽ Problem 48: Soccer Player Kick", curType === "soccer", () => {
+        state.classroom.problemType = "soccer";
+        state.classroom.y0 = 0.0;
+        state.classroom.v0 = 23.3;
+        state.classroom.thetaDeg = 31.0;
+        state.classroom.x1 = 49.0;
+        state.classroom.x2 = 52.0;
+        state.classroom.bldgHeight = 2.44;
+        state.classroom.g = 9.8;
+        syncSliders();
+        resetSimulation();
+        updateInquiryScenarioCard("classroom", "soccer");
+        updatePredictionQuiz();
+      });
+
+      addPresetPill("🎾 Problem 49: Tennis Serve Challenge", curType === "tennis", () => {
+        state.classroom.problemType = "tennis";
+        state.classroom.y0 = 2.5;
+        state.classroom.v0 = 40.0;
+        state.classroom.thetaDeg = 0.0;
+        state.classroom.x1 = 12.0;
+        state.classroom.x2 = 18.4;
+        state.classroom.bldgHeight = 0.92;
+        state.classroom.g = 9.8;
+        syncSliders();
+        resetSimulation();
+        updateInquiryScenarioCard("classroom", "tennis");
+        updatePredictionQuiz();
+      });
+
+      addPresetPill("📦 Problem 46: Tabletop Box Roll-Off", curType === "box-drop", () => {
+        state.classroom.problemType = "box-drop";
+        state.classroom.y0 = 2.0;
+        state.classroom.v0 = 5.0;
+        state.classroom.thetaDeg = 0.0;
+        state.classroom.x1 = 0.0;
+        state.classroom.x2 = 0.0;
+        state.classroom.bldgHeight = 0.0;
+        state.classroom.g = 9.8;
+        syncSliders();
+        resetSimulation();
+        updateInquiryScenarioCard("classroom", "box-drop");
+        updatePredictionQuiz();
       });
 
     } else {
@@ -2502,6 +2536,7 @@
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("sandbox", "max-range");
+        updatePredictionQuiz();
       });
       addPresetPill("Elevated Launch (15m, 30°)", false, () => {
         state.sandbox.v0 = 25.0;
@@ -2510,6 +2545,7 @@
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("sandbox", "elevated");
+        updatePredictionQuiz();
       });
     }
 
@@ -2611,48 +2647,77 @@
     window.addEventListener("mouseup", onPointerUp);
 
     canvas.addEventListener("touchstart", (e) => {
-      const touch = e.touches[0];
-      onPointerDown({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => e.preventDefault() });
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        onPointerDown({
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+          preventDefault: () => e.preventDefault()
+        });
+      }
     }, { passive: false });
 
     window.addEventListener("touchmove", (e) => {
-      if (activeDrag) {
+      if (activeDrag && e.touches.length === 1) {
         const touch = e.touches[0];
         onPointerMove({ clientX: touch.clientX, clientY: touch.clientY });
+        if (e.cancelable) e.preventDefault();
       }
     }, { passive: false });
 
     window.addEventListener("touchend", onPointerUp);
+
+    function getLauncherPivot() {
+      if (state.mode === "monkey") {
+        return { x: state.monkey.x0, y: state.monkey.y0 };
+      } else if (state.mode === "mark-rober") {
+        return { x: state.markRober.x0, y: state.markRober.y0 };
+      } else if (state.mode === "classroom") {
+        return { x: state.classroom.x0, y: state.classroom.y0 };
+      } else if (state.mode === "sandbox") {
+        return { x: state.sandbox.x0, y: state.sandbox.y0 };
+      }
+      return { x: 0, y: 0 };
+    }
 
     function onPointerDown(e) {
       const rect = canvas.getBoundingClientRect();
       const sx = e.clientX - rect.left;
       const sy = e.clientY - rect.top;
       const bounds = getViewportBounds();
-      const world = screenToWorld(sx, sy, bounds);
 
+      // Check Cannon Launcher pivot in screen space (hit radius: 75px covers barrel + pedestal)
+      const pivot = getLauncherPivot();
+      const lScreen = worldToScreen(pivot.x, pivot.y, bounds);
+      const dLauncher = Math.hypot(sx - lScreen.x, sy - lScreen.y);
+
+      if (dLauncher <= 75) {
+        activeDrag = "cannonAngle";
+        canvas.style.cursor = "grabbing";
+        if (e.preventDefault) e.preventDefault();
+        return;
+      }
+
+      // Check Monkey Target in Monkey mode (hit radius: 50px)
       if (state.mode === "monkey") {
         const m = state.monkey;
-        if (Math.hypot(world.x - m.xm, world.y - m.ym) < 2.5) {
+        const mScreen = worldToScreen(m.xm, m.ym, bounds);
+        if (Math.hypot(sx - mScreen.x, sy - mScreen.y) <= 50) {
           activeDrag = "monkeyTarget";
           canvas.style.cursor = "grabbing";
+          if (e.preventDefault) e.preventDefault();
           return;
         }
-        if (Math.hypot(world.x - m.x0, world.y - m.y0) < 3.0) {
-          activeDrag = "cannonAngle";
-          canvas.style.cursor = "grabbing";
-          return;
-        }
-      } else if (state.mode === "mark-rober") {
+      }
+
+      // Check Dartboard in Mark Rober mode (hit radius: 50px)
+      if (state.mode === "mark-rober") {
         const mr = state.markRober;
-        if (Math.hypot(world.x - mr.xBoard, world.y - mr.boardY) < 2.0) {
+        const dScreen = worldToScreen(mr.xBoard, mr.boardY, bounds);
+        if (Math.hypot(sx - dScreen.x, sy - dScreen.y) <= 50) {
           activeDrag = "dartboard";
           canvas.style.cursor = "grabbing";
-          return;
-        }
-        if (Math.hypot(world.x - mr.x0, world.y - mr.y0) < 2.5) {
-          activeDrag = "roberAngle";
-          canvas.style.cursor = "grabbing";
+          if (e.preventDefault) e.preventDefault();
           return;
         }
       }
@@ -2663,46 +2728,70 @@
       const sx = e.clientX - rect.left;
       const sy = e.clientY - rect.top;
       const bounds = getViewportBounds();
-      const world = screenToWorld(sx, sy, bounds);
 
       if (!activeDrag) {
+        const pivot = getLauncherPivot();
+        const lScreen = worldToScreen(pivot.x, pivot.y, bounds);
+        const dLauncher = Math.hypot(sx - lScreen.x, sy - lScreen.y);
+
+        if (dLauncher <= 75) {
+          canvas.style.cursor = "grab";
+          return;
+        }
         if (state.mode === "monkey") {
           const m = state.monkey;
-          if (Math.hypot(world.x - m.xm, world.y - m.ym) < 2.5 || Math.hypot(world.x - m.x0, world.y - m.y0) < 3.0) {
+          const mScreen = worldToScreen(m.xm, m.ym, bounds);
+          if (Math.hypot(sx - mScreen.x, sy - mScreen.y) <= 50) {
             canvas.style.cursor = "grab";
-          } else {
-            canvas.style.cursor = "crosshair";
+            return;
           }
         }
+        if (state.mode === "mark-rober") {
+          const mr = state.markRober;
+          const dScreen = worldToScreen(mr.xBoard, mr.boardY, bounds);
+          if (Math.hypot(sx - dScreen.x, sy - dScreen.y) <= 50) {
+            canvas.style.cursor = "grab";
+            return;
+          }
+        }
+        canvas.style.cursor = "crosshair";
         return;
       }
 
-      if (activeDrag === "monkeyTarget") {
+      if (activeDrag === "cannonAngle") {
+        const pivot = getLauncherPivot();
+        const lScreen = worldToScreen(pivot.x, pivot.y, bounds);
+        const dx = sx - lScreen.x;
+        const dy = lScreen.y - sy; // Screen Y is inverted
+        let deg = Math.atan2(dy, dx) * (180 / Math.PI);
+
+        if (state.mode === "classroom") {
+          deg = Math.max(0, Math.min(85, Math.round(deg * 2) / 2));
+          state.classroom.thetaDeg = deg;
+        } else if (state.mode === "sandbox") {
+          deg = Math.max(0, Math.min(85, Math.round(deg * 2) / 2));
+          state.sandbox.thetaDeg = deg;
+        } else if (state.mode === "monkey") {
+          deg = Math.max(-10, Math.min(80, Math.round(deg * 2) / 2));
+          state.monkey.thetaDeg = deg;
+        } else if (state.mode === "mark-rober") {
+          deg = Math.max(10, Math.min(80, Math.round(deg * 2) / 2));
+          state.markRober.alphaDeg = deg;
+        }
+        syncSliders();
+        resetSimulation();
+      } else if (activeDrag === "monkeyTarget") {
+        const world = screenToWorld(sx, sy, bounds);
         const newX = Math.max(15, Math.min(40, Math.round(world.x)));
         const newY = Math.max(6, Math.min(25, Number(world.y.toFixed(1))));
         state.monkey.xm = newX;
         state.monkey.ym = newY;
         syncSliders();
         resetSimulation();
-      } else if (activeDrag === "cannonAngle") {
-        const dx = world.x - state.monkey.x0;
-        const dy = world.y - state.monkey.y0;
-        let deg = Math.atan2(dy, dx) * (180 / Math.PI);
-        deg = Math.max(-10, Math.min(75, Number(deg.toFixed(1))));
-        state.monkey.thetaDeg = deg;
-        syncSliders();
-        resetSimulation();
       } else if (activeDrag === "dartboard") {
+        const world = screenToWorld(sx, sy, bounds);
         const newX = Math.max(3, Math.min(15, Number(world.x.toFixed(1))));
         state.markRober.xBoard = newX;
-        syncSliders();
-        resetSimulation();
-      } else if (activeDrag === "roberAngle") {
-        const dx = world.x - state.markRober.x0;
-        const dy = world.y - state.markRober.y0;
-        let deg = Math.atan2(dy, dx) * (180 / Math.PI);
-        deg = Math.max(10, Math.min(75, Number(deg.toFixed(1))));
-        state.markRober.alphaDeg = deg;
         syncSliders();
         resetSimulation();
       }
@@ -2775,42 +2864,233 @@
   }
 
   // ==========================================================================
-  // Student Challenge
+  // Student Challenge & Prediction Engine
   // ==========================================================================
+
+  let currentQuiz = null;
+  let currentQuizIndex = 0;
+
+  const scenarioQuizzes = {
+    "monkey": [
+      {
+        title: "🐵 Feed the Monkey: Sightline Aiming",
+        prompt: "Where must the cannon aim relative to the falling monkey to guarantee an intercept before ground impact?",
+        options: [
+          { text: "Directly along the line of sight toward the monkey", correct: true, explanation: "Because gravity accelerates both objects downward at identical -g, both drop the exact same vertical distance (½gt²) from the straight sightline. Aiming directly guarantees intercept at any launch speed!" },
+          { text: "Above the monkey to compensate for gravitational bullet drop", correct: false, explanation: "Since the monkey drops simultaneously, aiming above will cause the banana to pass over the falling monkey's head." },
+          { text: "Below the monkey to intercept where the monkey will be", correct: false, explanation: "Gravity acts on the banana too! Aiming below will cause the projectile to fall beneath the monkey." }
+        ]
+      },
+      {
+        title: "🐵 Feed the Monkey: Launch Speed Invariance",
+        prompt: "If launch speed v₀ is reduced from 30 m/s to 18 m/s while maintaining direct sightline aim, what happens?",
+        options: [
+          { text: "The banana still hits the monkey, but intercept happens at a lower altitude", correct: true, explanation: "The geometric line-of-sight cancellation holds for any speed. A slower speed takes longer to reach the monkey's distance, so both objects fall further, meeting closer to the ground!" },
+          { text: "The banana misses because slower projectiles curve downward much more steeply", correct: false, explanation: "Both objects experience the exact same downward acceleration g = 9.8 m/s² regardless of launch speed." },
+          { text: "The monkey reaches the ground before the banana arrives, causing a miss", correct: false, explanation: "Provided the minimum required speed is met (v0 ≥ xm / sqrt(2ym/g)), intercept always occurs before ground contact." }
+        ]
+      }
+    ],
+    "cliff-building": [
+      {
+        title: "🏔️ Lecture Notes: Building Obstacle Clearance",
+        prompt: "A projectile is launched from the 320 m cliff at 42 m/s and 30° above horizontal. Standing between x = 230 m and 310 m is a 70 m tall building. Does it clear the roof at x = 230 m?",
+        options: [
+          { text: "Yes, it clears the 70 m roof by over 180 meters (y = 257.0 m)", correct: true, explanation: "At x = 230 m, flight time is t = 230 / (42 · cos 30°) = 6.32 s. Vertical position y(6.32) = 320 + 21(6.32) - 4.9(6.32)² = 257.0 m, which is 187 m above the 70 m roof!" },
+          { text: "No, it strikes the front vertical wall of the building below 70 m", correct: false, explanation: "At x = 230 m, y = 257 m, well above the 70 m building height." },
+          { text: "It clears the front face but crashes onto the rooftop near x = 280 m", correct: false, explanation: "At x = 310 m (the back edge), y(8.52 s) = 143.1 m, still far above the 70 m rooftop!" }
+        ]
+      },
+      {
+        title: "🏔️ Lecture Notes: Peak Apex Altitude",
+        prompt: "At what time does the projectile launched from the 320 m cliff at 42 m/s (30°) reach its peak altitude above ground?",
+        options: [
+          { text: "t = 2.14 s (reaching apex height y_max = 342.5 m)", correct: true, explanation: "Setting vy(t) = v0y - gt = 0 gives t = (42 · sin 30°) / 9.8 = 21 / 9.8 = 2.14 s. Then y_max = 320 + (21)² / (2 · 9.8) = 342.5 m." },
+          { text: "t = 4.29 s at ground level", correct: false, explanation: "4.29 s is the time to return to launch altitude (y = 320 m), not peak apex." },
+          { text: "Apex occurs immediately at launch (t = 0)", correct: false, explanation: "Because launch angle is +30° above horizontal, the projectile initially rises upwards until vy = 0." }
+        ]
+      }
+    ],
+    "cliff-100m": [
+      {
+        title: "⛰️ Problem 47: Motion Independence",
+        prompt: "Rock A is dropped vertically from rest from the 100 m cliff. Rock B is simultaneously fired horizontally at 66.4 m/s. Which rock hits the ground first?",
+        options: [
+          { text: "Both rocks strike the ground at the exact same instant (t = 4.52 s)", correct: true, explanation: "Horizontal and vertical motions are completely independent! Both start with v0y = 0 and accelerate downward at ay = -9.8 m/s², so both take t = sqrt(2h/g) = sqrt(200/9.8) = 4.52 s to hit the ground." },
+          { text: "Rock A hits first because it travels a shorter straight vertical distance", correct: false, explanation: "Vertical acceleration is identical for both; horizontal velocity does not slow down vertical descent." },
+          { text: "Rock B hits first because its total speed is much higher", correct: false, explanation: "Speed along the x-axis contributes zero downward acceleration." }
+        ]
+      },
+      {
+        title: "⛰️ Problem 47: Target Range Launch Speed",
+        prompt: "To hit a ground target located 300 m from the base of the 100 m cliff with a horizontal launch, what initial speed v₀ is required?",
+        options: [
+          { text: "v₀ = 66.4 m/s (Δx / t_fall = 300 m / 4.52 s)", correct: true, explanation: "Fall time is t = sqrt(2 · 100 / 9.8) = 4.518 s. Since horizontal velocity is constant, v0 = Δx / t = 300 / 4.518 = 66.4 m/s." },
+          { text: "v₀ = 30.0 m/s", correct: false, explanation: "At 30 m/s, the projectile only reaches Δx = 30 · 4.52 = 135.5 m, falling far short of the 300 m target." },
+          { text: "v₀ = 100.0 m/s", correct: false, explanation: "At 100 m/s, Δx = 100 · 4.52 = 452 m, overshooting the target by 152 m." }
+        ]
+      }
+    ],
+    "soccer": [
+      {
+        title: "⚽ Problem 48: Defensive Wall Clearance",
+        prompt: "A soccer ball is kicked with vx = 20 m/s and vy = 12 m/s. A 2.44 m tall defensive wall stands at x = 49.0 m. Does the ball clear the wall?",
+        options: [
+          { text: "No, the ball has already hit the pitch at ground level right at x = 49.0 m", correct: true, explanation: "Total hang time is t = 2 · v0y / g = 2(12) / 9.8 = 2.449 s. The horizontal range is R = vx · t = 20 · 2.449 = 48.98 m ≈ 49.0 m. The ball strikes the pitch right at the wall base!" },
+          { text: "Yes, it flies over the top of the wall with over 3 meters of clearance", correct: false, explanation: "At t = 2.45 s, y ≈ 0 m, so it does not clear a 2.44 m elevated obstacle." },
+          { text: "Yes, it passes through the wall at its apex", correct: false, explanation: "Apex occurred much earlier at t = 12/9.8 = 1.22 s and x = 20(1.22) = 24.5 m." }
+        ]
+      },
+      {
+        title: "⚽ Problem 48: Maximum Apex Altitude",
+        prompt: "What is the maximum height above the pitch reached by this soccer kick (v0y = 12 m/s)?",
+        options: [
+          { text: "y_max = 7.35 m (v0y² / 2g = 144 / 19.6)", correct: true, explanation: "Using kinematic formula vy² = v0y² - 2gΔy: at apex vy = 0, so Δy = (12)² / (2 · 9.8) = 144 / 19.6 = 7.35 m." },
+          { text: "y_max = 12.0 m", correct: false, explanation: "12 m/s is the initial vertical velocity, not the altitude in meters." },
+          { text: "y_max = 24.5 m", correct: false, explanation: "24.5 m is the horizontal distance x to apex, not the vertical altitude." }
+        ]
+      }
+    ],
+    "tennis": [
+      {
+        title: "🎾 Problem 49: Net Clearance & Court Fault",
+        prompt: "A tennis player strikes a horizontal serve (v₀ = 40 m/s) from height 2.50 m. The 0.92 m net is at x = 12.0 m, and the service line is at x = 18.4 m. What is the outcome?",
+        options: [
+          { text: "Clears the net easily (y = 2.06 m), but FAULTS long at x = 28.6 m (> 18.4 m)", correct: true, explanation: "Time to net is t = 12/40 = 0.30 s. Net height y = 2.50 - ½(9.8)(0.30)² = 2.06 m (> 0.92 m, clears by 1.14 m!). But court landing time is t = sqrt(2 · 2.5 / 9.8) = 0.714 s, giving range x = 40 · 0.714 = 28.6 m, landing deep beyond the 18.4 m service box boundary!" },
+          { text: "Hits the net below 0.92 m and drops back", correct: false, explanation: "The ball is at 2.06 m when crossing the net, clearing it by over 1.1 meters." },
+          { text: "Clears the net and lands legally inside the 18.4 m service box", correct: false, explanation: "At 40 m/s horizontal speed, the landing range is 28.6 m, which is 10.2 meters past the service line." }
+        ]
+      },
+      {
+        title: "🎾 Problem 49: Maximum Legal Serve Speed",
+        prompt: "To land right on the 18.4 m service line from a 2.50 m horizontal strike, what would the serve speed need to be?",
+        options: [
+          { text: "v₀ = 25.8 m/s (18.4 m / 0.714 s)", correct: true, explanation: "With fall time t = 0.714 s, hitting the 18.4 m boundary requires v0 = 18.4 / 0.714 = 25.77 m/s ≈ 25.8 m/s (clearing the net at y = 1.50 m)." },
+          { text: "v₀ = 40.0 m/s", correct: false, explanation: "40 m/s causes the serve to sail long to 28.6 m." },
+          { text: "v₀ = 50.0 m/s", correct: false, explanation: "Higher speed increases the landing range even further." }
+        ]
+      }
+    ],
+    "box-drop": [
+      {
+        title: "📦 Problem 46: Tabletop Roll-Off Height Scaling",
+        prompt: "A block rolls off a 2.0 m table at 5.0 m/s. If the table height is quadrupled to 8.0 m at the same horizontal speed, how does the landing distance Δx change?",
+        options: [
+          { text: "Landing distance doubles (2×)", correct: true, explanation: "Fall time scales as sqrt(h): t = sqrt(2h/g). Quadrupling height (4h) doubles the time (sqrt(4) = 2). Since Δx = vx · t, the landing range exactly doubles from 3.19 m to 6.39 m!" },
+          { text: "Landing distance quadruples (4×)", correct: false, explanation: "Displacement y depends quadratically on time (y = ½gt²), so time scales as sqrt(h), not linearly with h." },
+          { text: "Landing distance stays the same because horizontal speed is unchanged", correct: false, explanation: "Although vx is constant, more time in the air allows the object to travel further horizontally." }
+        ]
+      }
+    ],
+    "mark-rober": [
+      {
+        title: "🎯 Mark Rober: Ceiling Clearance",
+        prompt: "If a dart is thrown with v₀ = 20 m/s at 45° from y₀ = 1.8 m under an 8.5 m ceiling, does it collide with the ceiling?",
+        options: [
+          { text: "Yes, apex altitude is 12.0 m, which exceeds the 8.5 m ceiling beam", correct: true, explanation: "v0y = 20 · sin 45° = 14.14 m/s. Theoretical apex is y_max = 1.8 + (14.14)² / (2 · 9.8) = 1.8 + 10.2 = 12.0 m. Since 12.0 m > 8.5 m, the dart strikes the ceiling!" },
+          { text: "No, it clears smoothly under the 8.5 m ceiling", correct: false, explanation: "Apex altitude 12.0 m is higher than the 8.5 m ceiling limit." },
+          { text: "The dart never rises above release height 1.8 m", correct: false, explanation: "The upward launch velocity v0y = 14.14 m/s causes significant vertical rise." }
+        ]
+      }
+    ],
+    "sandbox": [
+      {
+        title: "🧪 Sandbox: Maximum Range Launch Angle",
+        prompt: "For projectile motion over level ground with negligible air resistance, which launch angle achieves maximum horizontal range?",
+        options: [
+          { text: "θ = 45.0° (where sin(2θ) = 1)", correct: true, explanation: "The level-ground range formula R = (v₀² · sin(2θ)) / g reaches its mathematical maximum when sin(2θ) = 1, which occurs at 2θ = 90° ⇒ θ = 45°!" },
+          { text: "θ = 60.0° because higher elevation increases hang time", correct: false, explanation: "While 60° gives longer hang time, horizontal velocity vx = v0 cos(60°) is cut in half, reducing overall range." },
+          { text: "θ = 30.0° because lower launch yields higher horizontal velocity", correct: false, explanation: "30° gives faster forward speed but insufficient air time to travel as far as 45°." }
+        ]
+      }
+    ]
+  };
+
+  function getActiveQuizKey() {
+    if (state.mode === "monkey") return "monkey";
+    if (state.mode === "mark-rober") return "mark-rober";
+    if (state.mode === "classroom") {
+      return state.classroom.problemType || "cliff-building";
+    }
+    return "sandbox";
+  }
+
+  function updatePredictionQuiz() {
+    const key = getActiveQuizKey();
+    const quizList = scenarioQuizzes[key] || scenarioQuizzes["cliff-building"];
+    if (!quizList || quizList.length === 0) return;
+
+    if (currentQuizIndex >= quizList.length) {
+      currentQuizIndex = 0;
+    }
+    currentQuiz = quizList[currentQuizIndex];
+
+    const titleEl = document.getElementById("challengeTitle");
+    const promptEl = document.getElementById("challengePrompt");
+    const optionsCont = document.getElementById("challengeOptionsContainer");
+    const feedback = document.getElementById("challengeFeedback");
+
+    if (titleEl) titleEl.textContent = currentQuiz.title;
+    if (promptEl) promptEl.textContent = currentQuiz.prompt;
+    if (feedback) feedback.style.display = "none";
+
+    if (optionsCont) {
+      optionsCont.innerHTML = currentQuiz.options.map((opt, idx) => `
+        <label class="radio-item" style="padding: 0.35rem 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;">
+          <input type="radio" name="predChoice" value="${idx}" ${idx === 0 ? "checked" : ""}>
+          <span>${opt.text}</span>
+        </label>
+      `).join("");
+    }
+  }
 
   function setupChallenge() {
     const btnCheck = document.getElementById("btnCheckChallenge");
     const feedback = document.getElementById("challengeFeedback");
     const btnNew = document.getElementById("btnNewChallenge");
 
-    btnCheck.addEventListener("click", () => {
-      const selected = document.querySelector('input[name="predChoice"]:checked');
-      if (!selected) return;
+    if (btnCheck) {
+      btnCheck.addEventListener("click", () => {
+        const selected = document.querySelector('input[name="predChoice"]:checked');
+        if (!selected || !currentQuiz) return;
 
-      if (selected.value === "direct") {
-        feedback.style.display = "block";
-        feedback.style.background = "var(--success-bg)";
-        feedback.style.color = "var(--success)";
-        feedback.style.border = "1px solid var(--success-border)";
-        feedback.innerHTML = "<strong>✅ Correct!</strong> Because gravity accelerates both objects downward at the identical rate (<em>a</em><sub>y</sub> = &minus;<em>g</em>), both drop the exact same vertical distance (<span class=\"fraction\"><span class=\"num\">1</span><span class=\"den\">2</span></span><em>g</em><em>t</em>&sup2;) from the line of sight. Aiming directly at the monkey guarantees an intercept at any launch speed!";
-      } else {
-        feedback.style.display = "block";
-        feedback.style.background = "var(--error-bg)";
-        feedback.style.color = "var(--error)";
-        feedback.style.border = "1px solid var(--error-border)";
-        feedback.innerHTML = "<strong>❌ Incorrect:</strong> Because gravity begins pulling both objects downward the moment the cannon fires, aiming directly along the line of sight causes the two vertical drops to cancel out!";
-      }
-    });
+        const idx = parseInt(selected.value, 10);
+        const opt = currentQuiz.options[idx];
+        if (!opt) return;
 
-    btnNew.addEventListener("click", () => {
-      feedback.style.display = "none";
-      const speeds = [18.0, 22.0, 26.0, 30.0, 35.0, 42.0];
-      const s = speeds[Math.floor(Math.random() * speeds.length)];
-      state.monkey.v0 = s;
-      syncSliders();
-      document.getElementById("challengePrompt").textContent = `If launch speed is set to ${s.toFixed(1)} m/s, where should you aim to feed the falling monkey?`;
-      resetSimulation();
-    });
+        feedback.style.display = "block";
+        if (opt.correct) {
+          feedback.style.background = "var(--success-bg)";
+          feedback.style.color = "var(--success)";
+          feedback.style.border = "1px solid var(--success-border)";
+          feedback.innerHTML = `<strong>✅ Correct!</strong> ${opt.explanation}`;
+        } else {
+          feedback.style.background = "var(--error-bg)";
+          feedback.style.color = "var(--error)";
+          feedback.style.border = "1px solid var(--error-border)";
+          feedback.innerHTML = `<strong>❌ Not quite:</strong> ${opt.explanation}`;
+        }
+      });
+    }
+
+    if (btnNew) {
+      btnNew.addEventListener("click", () => {
+        const key = getActiveQuizKey();
+        const quizList = scenarioQuizzes[key] || scenarioQuizzes["cliff-building"];
+        if (quizList && quizList.length > 1) {
+          currentQuizIndex = (currentQuizIndex + 1) % quizList.length;
+        }
+        if (state.mode === "monkey") {
+          const speeds = [18.0, 22.0, 26.0, 30.0, 35.0, 42.0];
+          state.monkey.v0 = speeds[Math.floor(Math.random() * speeds.length)];
+          syncSliders();
+          resetSimulation();
+        }
+        updatePredictionQuiz();
+      });
+    }
+
+    updatePredictionQuiz();
   }
 
   // ==========================================================================
@@ -2829,6 +3109,7 @@
         btn.setAttribute("aria-selected", "true");
 
         state.mode = btn.dataset.mode;
+        currentQuizIndex = 0;
 
         // Switch control panels
         Object.keys(modeControlPanels).forEach(k => {
@@ -2842,6 +3123,7 @@
         });
 
         updatePresetBar();
+        updatePredictionQuiz();
         resetSimulation();
       });
     });
@@ -2915,6 +3197,7 @@
         syncSliders();
         resetSimulation();
       } else if (state.mode === "classroom") {
+        state.classroom.problemType = "cliff-building";
         state.classroom.y0 = 320;
         state.classroom.v0 = 42.0;
         state.classroom.thetaDeg = 30.0;
@@ -2924,6 +3207,8 @@
         state.classroom.g = 10.0;
         syncSliders();
         resetSimulation();
+        updateInquiryScenarioCard("classroom", "cliff-building");
+        updatePredictionQuiz();
       }
     });
 

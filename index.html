@@ -102,6 +102,14 @@
       </button>
     </nav>
 
+    <!-- Quick Setup Presets Bar (Prominently visible directly under mode bar) -->
+    <div class="preset-bar" id="presetBar" aria-label="Investigation Presets" style="margin-bottom: 0.85rem;">
+      <span class="preset-label" id="presetBarLabel">⚙️ Investigation Scenarios:</span>
+      <div id="presetPillsContainer" style="display: inline-flex; gap: 0.4rem; flex-wrap: wrap;">
+        <!-- Dynamically populated per mode -->
+      </div>
+    </div>
+
     <!-- Main Workspace Layout Grid -->
     <div class="layout-grid">
       <!-- LEFT COLUMN: Canvas Simulation Stage & Apparatus Controls -->
@@ -209,14 +217,6 @@
               <button type="button" class="speed-pill" data-speed="0.5">0.5×</button>
               <button type="button" class="speed-pill" data-speed="0.25">0.25×</button>
               <button type="button" class="speed-pill" data-speed="0.1">0.1×</button>
-            </div>
-          </div>
-
-          <!-- Quick Setup Presets Bar -->
-          <div class="preset-bar" id="presetBar" aria-label="Investigation Presets">
-            <span class="preset-label">⚙️ Investigation Presets:</span>
-            <div id="presetPillsContainer" style="display: inline-flex; gap: 0.4rem; flex-wrap: wrap;">
-              <!-- Dynamically populated per mode -->
             </div>
           </div>
         </div>
@@ -560,20 +560,16 @@
           <div class="panel-tab-content" id="subtab-logger">
             <!-- Prediction Challenge Box -->
             <div class="challenge-box">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <span style="font-weight: 700; color: var(--primary-teal-dark); font-size: 0.88rem;">🎯 Quick Prediction Challenge</span>
-                <button type="button" class="btn btn-sm btn-secondary" id="btnNewChallenge">New Speed</button>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.35rem;">
+                <span id="challengeTitle" style="font-weight: 700; color: var(--primary-teal-dark); font-size: 0.88rem;">🎯 Quick Prediction Challenge</span>
+                <button type="button" class="btn btn-sm btn-secondary" id="btnNewChallenge" style="font-size: 0.74rem; padding: 0.2rem 0.5rem;">New Challenge</button>
               </div>
-              <p id="challengePrompt" style="font-size: 0.82rem; color: var(--muted); margin-bottom: 0.5rem;">
-                If launch speed is set to 26.0 m/s, where should you aim to feed the falling monkey?
-              </p>
-              <div class="radio-row">
-                <label class="radio-item"><input type="radio" name="predChoice" value="above"> Above the monkey</label>
-                <label class="radio-item"><input type="radio" name="predChoice" value="below"> Below the monkey</label>
-                <label class="radio-item"><input type="radio" name="predChoice" value="direct" checked> Directly along line of sight</label>
+              <p id="challengePrompt" style="font-size: 0.82rem; color: var(--muted); margin-bottom: 0.5rem; line-height: 1.4;"></p>
+              <div class="radio-row" id="challengeOptionsContainer" style="display: flex; flex-direction: column; gap: 0.4rem;">
+                <!-- Populated dynamically per active scenario -->
               </div>
-              <button type="button" class="btn btn-sm btn-primary" id="btnCheckChallenge" style="width: 100%;">Check Prediction</button>
-              <div id="challengeFeedback" style="display: none; margin-top: 0.65rem; font-size: 0.82rem; padding: 0.5rem 0.75rem; border-radius: var(--radius-sm);"></div>
+              <button type="button" class="btn btn-sm btn-primary" id="btnCheckChallenge" style="width: 100%; margin-top: 0.6rem;">Check Prediction</button>
+              <div id="challengeFeedback" style="display: none; margin-top: 0.65rem; font-size: 0.82rem; padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); line-height: 1.45;"></div>
             </div>
 
             <!-- Inquiry Trials Table -->
