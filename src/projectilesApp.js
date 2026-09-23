@@ -1091,7 +1091,7 @@
         [
           {
             label: "Vertical Positions from Line of Sight",
-            math: katex(`y_{\\text{banana}}(t) = y_{\\text{sight}}(t) - \\frac{1}{2}gt^2, \\quad y_{\\text{monkey}}(t) = y_{m,0} - \\frac{1}{2}gt^2`)
+            math: katex(`y_{\\text{banana}}(t) = y_{\\text{sight}}(t) + \\frac{1}{2}gt^2, \\quad y_{\\text{monkey}}(t) = y_{m,0} + \\frac{1}{2}gt^2`)
           },
           {
             label: "Identical Drop Distance",
@@ -1173,11 +1173,11 @@
         [
           {
             label: "Vertical Position Law",
-            math: katex(`H = y(t_{\\text{board}}) = y_0 + v_{0y} t_{\\text{board}} - \\frac{1}{2}g t_{\\text{board}}^2`)
+            math: katex(`H = y(t_{\\text{board}}) = y_0 + v_{0y} t_{\\text{board}} + \\frac{1}{2}g t_{\\text{board}}^2`)
           },
           {
             label: "Numerical Substitution",
-            math: `${katex(`H = ${mr.y0.toFixed(1)} + (${vy})(${tBoard}) - 0.5(${g.toFixed(1)})(${tBoard})^2 = ${targetH}\\text{ m}`)} <span class="math-eval-tag" style="background: var(--accent-amber-light); color: var(--accent-amber-dark);">H = ${targetH} m</span>`
+            math: `${katex(`H = ${mr.y0.toFixed(1)} + (${vy})(${tBoard}) + 0.5(-${g.toFixed(1)})(${tBoard})^2 = ${targetH}\\text{ m}`)} <span class="math-eval-tag" style="background: var(--accent-amber-light); color: var(--accent-amber-dark);">H = ${targetH} m</span>`
           }
         ],
         true
@@ -1189,7 +1189,7 @@
         [
           {
             label: "Part A: Time to Apex (from vᵧ = 0)",
-            math: `${katex(`v_y(t) = v_{0y} - g t \\implies 0 = ${vy} - (${g.toFixed(1)}) t_{\\text{apex}} \\implies t_{\\text{apex}} = \\frac{${vy}}{${g.toFixed(1)}} = ${tApex}\\text{ s}`)} <span class="math-eval-tag">${tApex} s</span>`
+            math: `${katex(`v_y(t) = v_{0y} + g t \\implies 0 = ${vy} + (-${g.toFixed(1)}) t_{\\text{apex}} \\implies t_{\\text{apex}} = \\frac{${vy}}{${g.toFixed(1)}} = ${tApex}\\text{ s}`)} <span class="math-eval-tag">${tApex} s</span>`
           },
           {
             label: "Part B: Maximum Apex Altitude",
@@ -1259,7 +1259,7 @@
             },
             {
               label: "Ball Height at Net",
-              math: `${katex(`y_{\\text{net}} = y_0 - \\frac{1}{2}g t_{\\text{net}}^2 = ${cp.y0.toFixed(1)} - 0.5(${cp.g.toFixed(1)})(${tNet})^2 = ${yNet}\\text{ m}`)} <span class="math-eval-tag">${yNet} m</span>`
+              math: `${katex(`y_{\\text{net}} = y_0 + \\frac{1}{2}g t_{\\text{net}}^2 = ${cp.y0.toFixed(1)} + 0.5(-${cp.g.toFixed(1)})(${tNet})^2 = ${yNet}\\text{ m}`)} <span class="math-eval-tag">${yNet} m</span>`
             },
             {
               label: "Net Clearance Comparison",
@@ -1276,7 +1276,7 @@
           [
             {
               label: "Ground Flight Time",
-              math: `${katex(`0 = y_0 - \\frac{1}{2}gt^2 \\implies t_{\\text{ground}} = \\sqrt{\\frac{2y_0}{g}} = \\sqrt{\\frac{2(${cp.y0.toFixed(1)})}{${cp.g.toFixed(1)}}} = ${tGround}\\text{ s}`)} <span class="math-eval-tag">${tGround} s</span>`
+              math: `${katex(`0 = y_0 + \\frac{1}{2}gt^2 \\implies 0 = ${cp.y0.toFixed(1)} + 0.5(-${cp.g.toFixed(1)})t^2 \\implies t_{\\text{ground}} = \\sqrt{\\frac{2(${cp.y0.toFixed(1)})}{${cp.g.toFixed(1)}}} = ${tGround}\\text{ s}`)} <span class="math-eval-tag">${tGround} s</span>`
             },
             {
               label: "Landing Distance",
@@ -1331,7 +1331,7 @@
           [
             {
               label: "Position Equation",
-              math: `${katex(`0 = y_0 - \\frac{1}{2}gt^2 \\implies t_{\\text{fall}} = \\sqrt{\\frac{2y_0}{g}} = \\sqrt{\\frac{2(${cp.y0.toFixed(1)})}{${cp.g.toFixed(1)}}} = ${tFall}\\text{ s}`)} <span class="math-eval-tag">${tFall} s</span>`
+              math: `${katex(`0 = y_0 + \\frac{1}{2}gt^2 \\implies 0 = ${cp.y0.toFixed(1)} + 0.5(-${cp.g.toFixed(1)})t^2 \\implies t_{\\text{fall}} = \\sqrt{\\frac{2(${cp.y0.toFixed(1)})}{${cp.g.toFixed(1)}}} = ${tFall}\\text{ s}`)} <span class="math-eval-tag">${tFall} s</span>`
             }
           ]
         );
@@ -1448,7 +1448,7 @@
           [
             {
               label: "Fall Duration",
-              math: `${katex(`0 = y_0 - \\frac{1}{2}gt^2 \\implies t_{\\text{flight}} = \\sqrt{\\frac{2(100.0)}{${cp.g.toFixed(1)}}} = ${tFall}\\text{ s}`)} <span class="math-eval-tag">${tFall} s</span>`
+              math: `${katex(`0 = y_0 + \\frac{1}{2}gt^2 \\implies 0 = 100.0 + 0.5(-${cp.g.toFixed(1)})t^2 \\implies t_{\\text{flight}} = \\sqrt{\\frac{2(100.0)}{${cp.g.toFixed(1)}}} = ${tFall}\\text{ s}`)} <span class="math-eval-tag">${tFall} s</span>`
             }
           ]
         );
@@ -1532,7 +1532,7 @@
         [
           {
             label: "Vertical Position at Far Edge",
-            math: `${katex(`y(t_2) = y_0 + v_{0y} t_2 - \\frac{1}{2}g t_2^2 = ${cp.y0} + (${vy})(${t2}) - 0.5(${cp.g.toFixed(1)})(${t2})^2 = ${y2}\\text{ m}`)} <span class="math-eval-tag" style="background: var(--primary-teal-light); color: var(--primary-teal-dark);">y = ${y2} m</span>`
+            math: `${katex(`y(t_2) = y_0 + v_{0y} t_2 + \\frac{1}{2}g t_2^2 = ${cp.y0} + (${vy})(${t2}) + 0.5(-${cp.g.toFixed(1)})(${t2})^2 = ${y2}\\text{ m}`)} <span class="math-eval-tag" style="background: var(--primary-teal-light); color: var(--primary-teal-dark);">y = ${y2} m</span>`
           },
           {
             label: "Roof Clearance Margin",
@@ -1641,8 +1641,8 @@
     if (sohCalcVx) sohCalcVx.textContent = `${v0.toFixed(1)} · cos(${thetaDeg.toFixed(1)}°) = ${decomp.vx.toFixed(2)} m/s`;
     if (sohCalcVy) sohCalcVy.textContent = `${v0.toFixed(1)} · sin(${thetaDeg.toFixed(1)}°) = ${decomp.vy.toFixed(2)} m/s`;
     if (tcSubX) tcSubX.textContent = `x = ${x0.toFixed(1)} + (${decomp.vx.toFixed(1)})·t`;
-    if (tcSubVy) tcSubVy.textContent = `vᵧ = ${decomp.vy.toFixed(1)} - (${g.toFixed(1)})·t`;
-    if (tcSubY) tcSubY.textContent = `y = ${y0.toFixed(1)} + (${decomp.vy.toFixed(1)})·t - ${(0.5 * g).toFixed(1)}·t²`;
+    if (tcSubVy) tcSubVy.textContent = `vᵧ = ${decomp.vy.toFixed(1)} + (-${g.toFixed(1)})·t`;
+    if (tcSubY) tcSubY.textContent = `y = ${y0.toFixed(1)} + (${decomp.vy.toFixed(1)})·t + ½(-${g.toFixed(1)})·t²`;
   }
 
   // ==========================================================================
@@ -3691,7 +3691,7 @@
         title: "🏔️ Lecture Notes: Building Obstacle Clearance",
         prompt: "A projectile is launched from the 320 m cliff at 42 m/s and 30° above horizontal. Standing between x = 230 m and 310 m is a 70 m tall building. Does it clear the roof at x = 230 m?",
         options: [
-          { text: "Yes, it clears the 70 m roof by over 180 meters (y = 257.0 m)", correct: true, explanation: "At x = 230 m, flight time is t = 230 / (42 · cos 30°) = 6.32 s. Vertical position y(6.32) = 320 + 21(6.32) - 4.9(6.32)² = 257.0 m, which is 187 m above the 70 m roof!" },
+          { text: "Yes, it clears the 70 m roof by over 180 meters (y = 257.0 m)", correct: true, explanation: "At x = 230 m, flight time is t = 230 / (42 · cos 30°) = 6.32 s. Vertical position y(6.32) = 320 + 21(6.32) + ½(-9.8)(6.32)² = 257.0 m, which is 187 m above the 70 m roof!" },
           { text: "No, it strikes the front vertical wall of the building below 70 m", correct: false, explanation: "At x = 230 m, y = 257 m, well above the 70 m building height." },
           { text: "It clears the front face but crashes onto the rooftop near x = 280 m", correct: false, explanation: "At x = 310 m (the back edge), y(8.52 s) = 143.1 m, still far above the 70 m rooftop!" }
         ]
@@ -3700,7 +3700,7 @@
         title: "🏔️ Lecture Notes: Peak Apex Altitude",
         prompt: "At what time does the projectile launched from the 320 m cliff at 42 m/s (30°) reach its peak altitude above ground?",
         options: [
-          { text: "t = 2.14 s (reaching apex height y_max = 342.5 m)", correct: true, explanation: "Setting vy(t) = v0y - gt = 0 gives t = (42 · sin 30°) / 9.8 = 21 / 9.8 = 2.14 s. Then y_max = 320 + (21)² / (2 · 9.8) = 342.5 m." },
+          { text: "t = 2.14 s (reaching apex height y_max = 342.5 m)", correct: true, explanation: "Setting vy(t) = v0y + gt = 0 gives 0 = 21 + (-9.8)t => t = 21 / 9.8 = 2.14 s. Then y_max = 320 + (21)² / (2 · 9.8) = 342.5 m." },
           { text: "t = 4.29 s at ground level", correct: false, explanation: "4.29 s is the time to return to launch altitude (y = 320 m), not peak apex." },
           { text: "Apex occurs immediately at launch (t = 0)", correct: false, explanation: "Because launch angle is +30° above horizontal, the projectile initially rises upwards until vy = 0." }
         ]
@@ -3740,7 +3740,7 @@
         title: "⚽ Problem 48: Maximum Apex Altitude",
         prompt: "What is the maximum height above the pitch reached by this soccer kick (v0y = 12 m/s)?",
         options: [
-          { text: "y_max = 7.35 m (v0y² / 2g = 144 / 19.6)", correct: true, explanation: "Using kinematic formula vy² = v0y² - 2gΔy: at apex vy = 0, so Δy = (12)² / (2 · 9.8) = 144 / 19.6 = 7.35 m." },
+          { text: "y_max = 7.35 m (v0y² / 2g = 144 / 19.6)", correct: true, explanation: "Using kinematic formula vy² = v0y² + 2ayΔy (with ay = -9.8 m/s²): at apex vy = 0, so 0 = (12)² + 2(-9.8)Δy => Δy = 144 / 19.6 = 7.35 m." },
           { text: "y_max = 12.0 m", correct: false, explanation: "12 m/s is the initial vertical velocity, not the altitude in meters." },
           { text: "y_max = 24.5 m", correct: false, explanation: "24.5 m is the horizontal distance x to apex, not the vertical altitude." }
         ]
@@ -3751,7 +3751,7 @@
         title: "🎾 Problem 49: Net Clearance & Court Fault",
         prompt: "A tennis player strikes a horizontal serve (v₀ = 40 m/s) from height 2.50 m. The 0.92 m net is at x = 12.0 m, and the service line is at x = 18.4 m. What is the outcome?",
         options: [
-          { text: "Clears the net easily (y = 2.06 m), but FAULTS long at x = 28.6 m (> 18.4 m)", correct: true, explanation: "Time to net is t = 12/40 = 0.30 s. Net height y = 2.50 - ½(9.8)(0.30)² = 2.06 m (> 0.92 m, clears by 1.14 m!). But court landing time is t = sqrt(2 · 2.5 / 9.8) = 0.714 s, giving range x = 40 · 0.714 = 28.6 m, landing deep beyond the 18.4 m service box boundary!" },
+          { text: "Clears the net easily (y = 2.06 m), but FAULTS long at x = 28.6 m (> 18.4 m)", correct: true, explanation: "Time to net is t = 12/40 = 0.30 s. Net height y = 2.50 + ½(-9.8)(0.30)² = 2.06 m (> 0.92 m, clears by 1.14 m!). But court landing time is t = sqrt(2 · 2.5 / 9.8) = 0.714 s, giving range x = 40 · 0.714 = 28.6 m, landing deep beyond the 18.4 m service box boundary!" },
           { text: "Hits the net below 0.92 m and drops back", correct: false, explanation: "The ball is at 2.06 m when crossing the net, clearing it by over 1.1 meters." },
           { text: "Clears the net and lands legally inside the 18.4 m service box", correct: false, explanation: "At 40 m/s horizontal speed, the landing range is 28.6 m, which is 10.2 meters past the service line." }
         ]

@@ -636,11 +636,11 @@
         ay: -g,
         voy: vy,
         vy: currentVy,
-        formula_y: "y = y₀ + v₀ᵧ·t - ½·g·t²",
-        sub_y: `${y0.toFixed(1)} + (${vy.toFixed(2)})·(${t.toFixed(2)}) - 0.5·(${g.toFixed(1)})·(${t.toFixed(2)})²`,
+        formula_y: "y = y₀ + v₀ᵧ·t + ½·g·t²",
+        sub_y: `${y0.toFixed(1)} + (${vy.toFixed(2)})·(${t.toFixed(2)}) + ½·(-${g.toFixed(1)})·(${t.toFixed(2)})²`,
         current_y: currentY,
-        formula_vy: "vᵧ = v₀ᵧ - g·t",
-        sub_vy: `${vy.toFixed(2)} - (${g.toFixed(1)})·(${t.toFixed(2)})`
+        formula_vy: "vᵧ = v₀ᵧ + g·t",
+        sub_vy: `${vy.toFixed(2)} + (-${g.toFixed(1)})·(${t.toFixed(2)})`
       },
       timeBridge: {
         t: t,

@@ -31,9 +31,9 @@ $$\begin{array}{|l|l|}
 \hline
 \textbf{Horizontal Channel } (a_x = 0) & \textbf{Vertical Channel } (a_y = -g) \\
 \hline
-v_x(t) = v_{0x} = v_0 \cos\theta = \text{constant} & v_y(t) = v_{0y} - g t = v_0 \sin\theta - g t \\
-x(t) = x_0 + (v_0 \cos\theta) t & y(t) = y_0 + (v_0 \sin\theta) t - \frac{1}{2} g t^2 \\
-\text{No acceleration in } x & v_y^2 = v_{0y}^2 - 2 g (y - y_0) \\
+v_x(t) = v_{0x} = v_0 \cos\theta = \text{constant} & v_y(t) = v_{0y} + g t = v_0 \sin\theta + g t \quad (\text{where } g = -9.8\,\text{m/s}^2) \\
+x(t) = x_0 + (v_0 \cos\theta) t & y(t) = y_0 + (v_0 \sin\theta) t + \frac{1}{2} g t^2 \\
+\text{No acceleration in } x & v_y^2 = v_{0y}^2 + 2 g (y - y_0) \\
 \hline
 \end{array}$$
 
@@ -106,8 +106,8 @@ In Mark Rober's viral robotic dartboard challenge:
 1. **Flight time to board:**
    $$t = \frac{D}{v_0 \cos\alpha} = \frac{5.00}{15.0 \cos(40^\circ)} = \frac{5.00}{11.49} = 0.435\,\text{s}$$
 2. **Impact elevation:**
-   $$H = y_0 + (v_0 \sin\alpha) t - \frac{1}{2} g t^2$$
-   $$H = 1.80 + (15.0 \sin 40^\circ)(0.435) - 4.90(0.435)^2$$
+   $$H = y_0 + (v_0 \sin\alpha) t + \frac{1}{2} g t^2$$
+   $$H = 1.80 + (15.0 \sin 40^\circ)(0.435) + \frac{1}{2}(-9.80)(0.435)^2$$
    $$H = 1.80 + (9.642)(0.435) - 4.90(0.1892) = 1.80 + 4.194 - 0.927 = 5.067\,\text{m}$$
 
 ### 4.2 Ceiling Collision Check

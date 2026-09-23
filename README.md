@@ -24,7 +24,7 @@ An interactive 2D projectile kinematics virtual laboratory and inquiry simulator
 
 ### 3. Classroom Kinematics & Cornell T-Chart Engine
 - **Horizontal Channel ($a_x = 0$):** $v_x = v_0 \cos\theta = \text{const}$, $x = x_0 + v_{0x}t$
-- **Vertical Channel ($a_y = -g$):** $v_y = v_{0y} - gt$, $y = y_0 + v_{0y}t - \frac{1}{2}gt^2$
+- **Vertical Channel ($a_y = -g$):** $v_y = v_{0y} + gt$, $y = y_0 + v_{0y}t + \frac{1}{2}gt^2$ (with $g = -9.8\,\text{m/s}^2$)
 - **Time as the Scalar Bridge:** Visual connecting bridge illustrating how time links the two independent 1D motions.
 
 For complete mathematical derivations, the algebraic proof of the Monkey-Hunter theorem, and worked examples, see [PHYSICS.md](./PHYSICS.md).
