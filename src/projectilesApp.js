@@ -993,8 +993,8 @@
 
         mathContainer.innerHTML = `
           <div class="math-title">
-            <span>🎾 Packet 6 #49: Tennis Serve Challenge (Full Process)</span>
-            <span class="lab-badge">Unit 1 Packet 6</span>
+            <span>🎾 Tennis Serve Challenge: Full Clearance Solution</span>
+            <span class="lab-badge">Horizontal Trajectory</span>
           </div>
 
           <div class="math-step-card">
@@ -1063,8 +1063,8 @@
 
         mathContainer.innerHTML = `
           <div class="math-title">
-            <span>📦 Packet 6 #46: Box Rolling Drop Solution</span>
-            <span class="lab-badge">Unit 1 Packet 6</span>
+            <span>📦 Box Roll-Off: First-Principles Kinematics Solution</span>
+            <span class="lab-badge">Horizontal Rolling</span>
           </div>
 
           <div class="math-step-card">
@@ -1123,8 +1123,8 @@
 
         mathContainer.innerHTML = `
           <div class="math-title">
-            <span>⚽ Packet 6 #48: Soccer Kick Full Pedagogical Solution</span>
-            <span class="lab-badge">Unit 1 Packet 6</span>
+            <span>⚽ Soccer Kick: Full Pedagogical Solution</span>
+            <span class="lab-badge">Ground-to-Ground</span>
           </div>
 
           <div class="math-step-card">
@@ -1186,8 +1186,8 @@
 
         mathContainer.innerHTML = `
           <div class="math-title">
-            <span>⛰️ Packet 6 #47: 100m Cliff Cannonball Launch</span>
-            <span class="lab-badge">Unit 1 Packet 6</span>
+            <span>⛰️ 100m Cliff Launch: Required Velocity Solution</span>
+            <span class="lab-badge">Horizontal Launch</span>
           </div>
 
           <div class="math-step-card">
@@ -2233,7 +2233,7 @@
         resetSimulation();
       });
 
-      addPresetPill("🎾 #49 Tennis Serve Challenge", false, () => {
+      addPresetPill("🎾 Tennis Serve Challenge", false, () => {
         state.classroom.problemType = "tennis";
         state.classroom.y0 = 2.5;
         state.classroom.v0 = 40.0;
@@ -2246,7 +2246,7 @@
         resetSimulation();
       });
 
-      addPresetPill("⚽ #48 Soccer Kick (20 & 12 m/s)", false, () => {
+      addPresetPill("⚽ Soccer Kick (20 & 12 m/s)", false, () => {
         state.classroom.problemType = "soccer";
         state.classroom.y0 = 0.0;
         state.classroom.v0 = 23.3;
@@ -2259,7 +2259,7 @@
         resetSimulation();
       });
 
-      addPresetPill("📦 #46 Box Rolling Drop (2m, 5 m/s)", false, () => {
+      addPresetPill("📦 Box Roll-Off (2m, 5 m/s)", false, () => {
         state.classroom.problemType = "box-drop";
         state.classroom.y0 = 2.0;
         state.classroom.v0 = 5.0;
@@ -2272,7 +2272,7 @@
         resetSimulation();
       });
 
-      addPresetPill("⛰️ #47 100m Cliff Launch (300m)", false, () => {
+      addPresetPill("⛰️ 100m Cliff Launch (300m range)", false, () => {
         state.classroom.problemType = "cliff-100m";
         state.classroom.y0 = 100.0;
         state.classroom.v0 = 66.4;
