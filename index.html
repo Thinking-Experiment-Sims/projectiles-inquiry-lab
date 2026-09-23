@@ -114,13 +114,13 @@
     <div class="layout-grid">
       <!-- LEFT COLUMN: Canvas Simulation Stage & Apparatus Controls -->
       <section class="stage-column" aria-label="Laboratory Simulation Stage">
-        <!-- Mode & Inquiry Goal Status Banner -->
+        <!-- Mode & Inquiry Goal Status Banner (Fixed Height to Prevent Layout Shift) -->
         <div class="lock-banner ready" id="lockBanner">
-          <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+          <div class="lock-banner-header">
             <span class="lock-banner-badge" id="lockBannerBadge">🐵 FEED THE MONKEY</span>
-            <span id="lockBannerText">Aim directly at the monkey and release to observe equal vertical drop!</span>
+            <span class="lock-banner-sub" id="lockBannerSub">READY</span>
           </div>
-          <span id="lockBannerSub" style="font-size: 0.78rem; font-weight: 600; color: var(--primary-teal-dark);">Ready to Launch</span>
+          <div class="lock-banner-text" id="lockBannerText">Aim directly at the monkey and release to observe equal vertical drop!</div>
         </div>
 
         <!-- Problem Statement & Explicit Questions Card -->

@@ -342,17 +342,23 @@ body {
 
 .lock-banner {
   border-radius: var(--radius-md);
-  padding: 0.75rem 1.1rem;
-  font-size: 0.85rem;
+  padding: 0.45rem 0.95rem;
+  font-size: 0.82rem;
   font-weight: 500;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.6rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  height: 72px;
+  min-height: 72px;
+  max-height: 72px;
+  box-sizing: border-box;
+  overflow: hidden;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
   background: #ffffff;
+  flex-shrink: 0;
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .lock-banner.ready {
@@ -375,16 +381,71 @@ body {
   background: linear-gradient(90deg, var(--error-bg), #ffffff 40%);
 }
 
+.lock-banner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  line-height: 1;
+}
+
 .lock-banner-badge {
   font-family: "JetBrains Mono", monospace;
-  font-size: 0.76rem;
+  font-size: 0.73rem;
   font-weight: 700;
   text-transform: uppercase;
-  padding: 0.2rem 0.55rem;
+  padding: 0.15rem 0.5rem;
   border-radius: var(--radius-sm);
   background: #ffffff;
   border: 1px solid var(--border);
   color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 75%;
+}
+
+.lock-banner-sub {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.lock-banner.ready .lock-banner-sub {
+  background: var(--primary-teal-light);
+  color: var(--primary-teal-dark);
+}
+
+.lock-banner.running .lock-banner-sub {
+  background: var(--accent-amber-light);
+  color: var(--accent-amber-dark);
+}
+
+.lock-banner.hit .lock-banner-sub {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.lock-banner.miss .lock-banner-sub {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
+.lock-banner-text {
+  font-size: 0.81rem;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ==========================================================================

@@ -923,7 +923,15 @@
     lockBanner.className = `lock-banner ${type}`;
     lockBannerBadge.textContent = badgeText;
     lockBannerText.textContent = message;
-    lockBannerSub.textContent = type.toUpperCase();
+    const typeLabels = {
+      ready: "READY",
+      running: "IN FLIGHT",
+      hit: "HIT / CLEARED",
+      miss: "COLLISION / FAULT"
+    };
+    if (lockBannerSub) {
+      lockBannerSub.textContent = typeLabels[type] || type.toUpperCase();
+    }
   }
 
   // ==========================================================================
