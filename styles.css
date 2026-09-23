@@ -632,6 +632,29 @@ body {
   border-color: var(--primary-teal-dark);
 }
 
+.gravity-pill {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  color: var(--ink);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gravity-pill:hover {
+  border-color: var(--primary-teal);
+  color: var(--primary-teal-dark);
+}
+
+.gravity-pill.active {
+  background: var(--primary-teal);
+  color: #ffffff;
+  border-color: var(--primary-teal-dark);
+}
+
 /* Presets Bar */
 .preset-bar {
   display: flex;

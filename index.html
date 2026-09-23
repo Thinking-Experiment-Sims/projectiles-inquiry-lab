@@ -438,6 +438,16 @@
                     <input type="range" id="classBldgW" min="0" max="150" step="0.5" value="80" class="range-slider">
                   </div>
                 </div>
+
+                <div class="param-item" style="margin-top: 0.25rem;">
+                  <div class="param-label-row">
+                    <span>Gravity Acceleration (<span class="math-expr">g</span>):</span>
+                  </div>
+                  <select id="classGravity" class="select-input">
+                    <option value="10.00" selected>Worksheet / Clean Exam (g = 10.0 m/s²)</option>
+                    <option value="9.80">Standard Earth (g = 9.80 m/s²)</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -475,6 +485,12 @@
                       <span class="param-val-badge" id="sbGravityVal">9.80 m/s²</span>
                     </div>
                     <input type="range" id="sbGravity" min="0" max="25" step="0.1" value="9.80" class="range-slider">
+                    <div class="gravity-pills-row" style="display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.4rem;">
+                      <button type="button" class="gravity-pill active" id="btnSbG98" data-g="9.80">Earth (9.8)</button>
+                      <button type="button" class="gravity-pill" id="btnSbG10" data-g="10.00">Exam (10)</button>
+                      <button type="button" class="gravity-pill" id="btnSbGMoon" data-g="1.62">Moon (1.62)</button>
+                      <button type="button" class="gravity-pill" id="btnSbGZero" data-g="0.00">Zero-G (0)</button>
+                    </div>
                   </div>
                 </div>
               </div>

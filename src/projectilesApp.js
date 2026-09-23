@@ -2569,7 +2569,34 @@
       document.getElementById("classBldgX1Val").textContent = cp.x1.toFixed(0) + " m";
       document.getElementById("classBldgW").value = cp.x2 - cp.x1;
       document.getElementById("classBldgWVal").textContent = (cp.x2 - cp.x1).toFixed(0) + " m";
+      const classGravEl = document.getElementById("classGravity");
+      if (classGravEl) {
+        classGravEl.value = (Math.abs(cp.g - 10.0) < 0.05 ? "10.00" : "9.80");
+      }
+    } else if (state.mode === "sandbox") {
+      const sb = state.sandbox;
+      document.getElementById("sbV0").value = sb.v0;
+      document.getElementById("sbV0Val").textContent = sb.v0.toFixed(1) + " m/s";
+      document.getElementById("sbAngle").value = sb.thetaDeg;
+      document.getElementById("sbAngleVal").textContent = sb.thetaDeg.toFixed(1) + "°";
+      document.getElementById("sbY0").value = sb.y0;
+      document.getElementById("sbY0Val").textContent = sb.y0.toFixed(1) + " m";
+      document.getElementById("sbGravity").value = sb.g;
+      document.getElementById("sbGravityVal").textContent = sb.g.toFixed(2) + " m/s²";
+      updateSandboxGravityButtons();
     }
+  }
+
+  function updateSandboxGravityButtons() {
+    const curG = state.sandbox.g;
+    const btn98 = document.getElementById("btnSbG98");
+    const btn10 = document.getElementById("btnSbG10");
+    const btnMoon = document.getElementById("btnSbGMoon");
+    const btnZero = document.getElementById("btnSbGZero");
+    if (btn98) btn98.classList.toggle("active", Math.abs(curG - 9.80) < 0.05);
+    if (btn10) btn10.classList.toggle("active", Math.abs(curG - 10.00) < 0.05);
+    if (btnMoon) btnMoon.classList.toggle("active", Math.abs(curG - 1.62) < 0.05);
+    if (btnZero) btnZero.classList.toggle("active", Math.abs(curG - 0.00) < 0.01);
   }
 
   // ==========================================================================
@@ -3001,10 +3028,45 @@
     bindSlider("classBldgX1", "classBldgX1Val", state.classroom, "x1", "m", 0);
     bindSlider("classBldgW", "classBldgWVal", state.classroom, "bldgWidth", "m", 0);
 
+    const classGravEl = document.getElementById("classGravity");
+    if (classGravEl) {
+      classGravEl.addEventListener("change", (e) => {
+        state.classroom.g = parseFloat(e.target.value);
+        resetSimulation();
+      });
+    }
+
     bindSlider("sbV0", "sbV0Val", state.sandbox, "v0", "m/s");
     bindSlider("sbAngle", "sbAngleVal", state.sandbox, "thetaDeg", "°");
     bindSlider("sbY0", "sbY0Val", state.sandbox, "y0", "m", 0);
-    bindSlider("sbGravity", "sbGravityVal", state.sandbox, "g", "m/s²");
+    bindSlider("sbGravity", "sbGravityVal", state.sandbox, "g", "m/s²", 2);
+
+    const sbGravEl = document.getElementById("sbGravity");
+    if (sbGravEl) {
+      sbGravEl.addEventListener("input", () => {
+        updateSandboxGravityButtons();
+      });
+    }
+
+    const sbGravPills = [
+      { id: "btnSbG98", g: 9.80 },
+      { id: "btnSbG10", g: 10.00 },
+      { id: "btnSbGMoon", g: 1.62 },
+      { id: "btnSbGZero", g: 0.00 }
+    ];
+    sbGravPills.forEach(({ id, g }) => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.addEventListener("click", () => {
+          state.sandbox.g = g;
+          if (sbGravEl) sbGravEl.value = g;
+          const disp = document.getElementById("sbGravityVal");
+          if (disp) disp.textContent = `${g.toFixed(2)} m/s²`;
+          updateSandboxGravityButtons();
+          resetSimulation();
+        });
+      }
+    });
 
     // Table actions
     document.getElementById("btnClearLog").addEventListener("click", () => {
