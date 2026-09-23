@@ -33,7 +33,6 @@
   const toggleStrobes = document.getElementById("toggleStrobes");
   const toggleVectors = document.getElementById("toggleVectors");
   const toggleGrid = document.getElementById("toggleGrid");
-  const toggleZeroG = document.getElementById("toggleZeroG");
   const toggleAudio = document.getElementById("toggleAudio");
   const btnAutoFitZoom = document.getElementById("btnAutoFitZoom");
 
@@ -158,7 +157,6 @@
     showStrobes: true,
     showVectors: true,
     showGrid: false,
-    showZeroG: false,
 
     // Mode 1: Monkey
     monkey: {
@@ -222,7 +220,6 @@
 
   let currentTrajectory = [];
   let currentStrobes = [];
-  let currentZeroGTrajectory = [];
 
   // ==========================================================================
   // Math Renderer Helper (KaTeX + Pure Typographic HTML Fallback)
@@ -395,19 +392,6 @@
       currentTrajectory = trajRes.points;
       currentStrobes = ProjectilesPhysics.generateStrobePoints(currentTrajectory, 0.10);
 
-      if (state.showZeroG) {
-        const zg = ProjectilesPhysics.generateTrajectory({
-          x0: m.x0,
-          y0: m.y0,
-          v0: m.v0,
-          thetaDeg: m.thetaDeg,
-          g: 0,
-          groundY: -100,
-          dt: 0.02,
-          maxT: 5
-        });
-        currentZeroGTrajectory = zg.points;
-      }
 
       m.hitResult = ProjectilesPhysics.calculateMonkeyIntercept({
         x0: m.x0,
@@ -621,18 +605,25 @@
           setBanner("miss", "BUILDING COLLISION", `Crashed into building ${hit.collisionType === "roof" ? "roof" : "front wall"} at x = ${hit.collisionX.toFixed(1)}m!`);
           logTrial("Classroom", cp.v0, cp.thetaDeg, hit.collisionT, hit.collisionX, hit.collisionY, "BUILDING HIT");
           pauseSimulation();
-        } else if (pos.x >= cp.x2 && !state.hasEnded) {
+          return;
+        } else if (!state.hasEnded && !cp._hasClearedBuilding && pos.x >= cp.x2) {
+          // Pedagogical transit checkpoint: ball clears the far edge of the building roof
+          cp._hasClearedBuilding = true;
+          sfx.playHit();
+          setBanner("hit", "ROOF CLEARED (x = " + cp.x2.toFixed(0) + "m)", `Cleared 70m roof! Height y = ${hit.y2.toFixed(1)}m (+${(hit.y2 - cp.bldgHeight).toFixed(1)}m margin). Click "Resume" to watch flight to ground.`);
+          logTrial("Classroom", cp.v0, cp.thetaDeg, t, pos.x, pos.y, "CLEARED ROOF");
+          pauseSimulation();
+          updateTelemetryHUD();
+          return;
+        } else if (!state.hasEnded && pos.y <= 0) {
           state.hasEnded = true;
           sfx.playHit();
-          setBanner("hit", "CLEARED BUILDING", `Cleared Building! Height at far edge was ${hit.y2.toFixed(1)}m (cleared ${cp.bldgHeight}m roof by ${(hit.y2 - cp.bldgHeight).toFixed(1)}m)!`);
-          logTrial("Classroom", cp.v0, cp.thetaDeg, t, pos.x, pos.y, "CLEARED");
-          pauseSimulation();
-        } else if (pos.y <= 0 && !state.hasEnded) {
-          state.hasEnded = true;
-          sfx.playMiss();
-          setBanner("miss", "GROUND IMPACT", `Landed on ground at x = ${pos.x.toFixed(1)}m.`);
+          const vel = ProjectilesPhysics.getVelocityAtTime({ vx: decomp.vx, vy: decomp.vy, g: cp.g, t: t });
+          setBanner("hit", "GROUND IMPACT", `Landed on ground at x = ${pos.x.toFixed(1)}m (t = ${t.toFixed(2)}s). Final velocity = ${vel.speed.toFixed(1)} m/s.`);
           logTrial("Classroom", cp.v0, cp.thetaDeg, t, pos.x, 0, "GROUND HIT");
           pauseSimulation();
+          updateTelemetryHUD();
+          return;
         }
 
       } else if (pType === "tennis") {
@@ -830,7 +821,13 @@
       cancelAnimationFrame(animFrameId);
       animFrameId = null;
     }
-    btnPause.innerHTML = '<span>▶</span> Resume';
+    if (state.hasEnded) {
+      btnPause.disabled = true;
+      btnPause.innerHTML = '<span>✓</span> Complete';
+    } else {
+      btnPause.disabled = false;
+      btnPause.innerHTML = '<span>▶</span> Resume';
+    }
     btnFire.disabled = false;
     btnFireText.textContent = "Relaunch";
   }
@@ -838,7 +835,9 @@
   function resumeSimulation() {
     if (!state.isRunning || state.hasEnded) return;
     state.isPaused = false;
+    btnPause.disabled = false;
     btnPause.innerHTML = '<span>❚❚</span> Pause';
+    setBanner("running", "IN FLIGHT", "Projectile is in motion. Tracking telemetry...");
     lastTimestamp = null;
     if (animFrameId) {
       cancelAnimationFrame(animFrameId);
@@ -897,6 +896,7 @@
       state.classroom._hasReachedWall = false;
       state.classroom._hasReachedNet = false;
       state.classroom._pausedAtNet = false;
+      state.classroom._hasClearedBuilding = false;
       const pType = state.classroom.problemType || "cliff-building";
       if (pType === "tennis") {
         setBanner("ready", "PROBLEM 49: TENNIS FLAT SERVE", "Horizontal serve from 2.5m at 40 m/s. Check net clearance & service line boundary!");
@@ -2881,20 +2881,6 @@
   function drawTrajectories(b) {
     if (!currentTrajectory || currentTrajectory.length < 2) return;
 
-    if (state.showZeroG && currentZeroGTrajectory.length > 1) {
-      ctx.strokeStyle = "rgba(18, 49, 64, 0.25)";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([4, 6]);
-      ctx.beginPath();
-      for (let i = 0; i < currentZeroGTrajectory.length; i++) {
-        const pt = worldToScreen(currentZeroGTrajectory[i].x, currentZeroGTrajectory[i].y, b);
-        if (i === 0) ctx.moveTo(pt.x, pt.y);
-        else ctx.lineTo(pt.x, pt.y);
-      }
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
     ctx.strokeStyle = "rgba(15, 126, 155, 0.88)";
     ctx.lineWidth = 2.5;
     ctx.beginPath();
@@ -3088,8 +3074,6 @@
       addPresetPill("Zero-Gravity (g = 0)", false, () => {
         state.monkey.g = 0;
         document.getElementById("simGravity").value = "0.00";
-        state.showZeroG = true;
-        toggleZeroG.classList.add("active");
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("monkey", "zerog");
@@ -4054,12 +4038,6 @@
     toggleGrid.addEventListener("click", () => {
       state.showGrid = !state.showGrid;
       toggleGrid.classList.toggle("active", state.showGrid);
-      render();
-    });
-    toggleZeroG.addEventListener("click", () => {
-      state.showZeroG = !state.showZeroG;
-      toggleZeroG.classList.toggle("active", state.showZeroG);
-      refreshCurrentPhysics();
       render();
     });
     toggleAudio.addEventListener("click", () => {
