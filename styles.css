@@ -715,39 +715,50 @@ body {
    ========================================================================== */
 
 .tab-nav-pills {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.4rem;
   border-bottom: 1px solid var(--border);
-  padding-bottom: 0.5rem;
-  margin-bottom: 1rem;
-  overflow-x: auto;
+  padding-bottom: 0.6rem;
+  margin-bottom: 0.85rem;
+  overflow: hidden;
 }
 
 .tab-pill {
-  background: transparent;
-  border: none;
-  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background: var(--surface-alt);
+  border: 1px solid var(--border-light);
+  font-size: 0.76rem;
   font-weight: 600;
   color: var(--muted);
-  padding: 0.35rem 0.75rem;
+  padding: 0.45rem 0.35rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.15s ease;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.2;
 }
 
 .tab-pill:hover {
   color: var(--primary-teal-dark);
   background: var(--primary-teal-light);
+  border-color: var(--primary-teal-border);
 }
 
 .tab-pill.active {
   background: var(--primary-teal);
   color: #ffffff;
+  border-color: var(--primary-teal);
+  box-shadow: 0 2px 4px rgba(15, 126, 155, 0.25);
 }
 
 .panel-tab-content {
   display: none;
+  overflow-x: hidden;
 }
 
 .panel-tab-content.active {
@@ -818,13 +829,14 @@ body {
   background: #ffffff;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 1rem;
-  margin-top: 0.75rem;
+  padding: 0.85rem;
+  margin-top: 0.5rem;
   box-shadow: var(--shadow-sm);
+  overflow-x: hidden;
 }
 
 .math-title {
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   font-weight: 700;
   color: var(--primary-teal-dark);
   margin-bottom: 0.6rem;
@@ -833,20 +845,91 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.math-step-card {
+  background: var(--surface-alt);
+  border: 1px solid var(--border-light);
+  border-left: 3.5px solid var(--primary-teal);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  overflow-x: hidden;
+}
+
+.math-step-card.accent-amber {
+  border-left-color: var(--accent-amber);
+}
+
+.math-step-card.accent-dark {
+  border-left-color: var(--primary-teal-dark);
+}
+
+.math-step-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary-teal-dark);
+}
+
+.math-step-desc {
+  font-size: 0.77rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.math-step-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.4rem 0.55rem;
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  color: var(--ink);
+  line-height: 1.4;
+  overflow-x: hidden;
+}
+
+.math-step-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--subtle);
+}
+
+.math-step-math {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.82rem;
+  word-break: break-word;
 }
 
 .math-eq-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0.65rem 0.85rem;
+  gap: 0.4rem;
+  padding: 0.55rem 0.75rem;
   background: var(--surface-alt);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
-  margin-bottom: 0.75rem;
-  font-size: 0.95rem;
+  margin-bottom: 0.65rem;
+  font-size: 0.88rem;
   color: var(--ink);
+  overflow-x: hidden;
 }
 
 /* Stacked Fraction Typography */

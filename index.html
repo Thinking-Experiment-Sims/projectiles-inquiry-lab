@@ -44,12 +44,12 @@
       <div class="guide-grid">
         <div class="guide-card-item">
           <div class="guide-card-title">🐵 1. Feed the Monkey (Gizmo Activity)</div>
-          <p><strong>Question:</strong> Where should you aim to hit a monkey that lets go and drops the instant the cannon fires?</p>
+          <p><strong>Question:</strong> Where should you aim a banana to feed a falling monkey that releases its branch the instant the cannon fires?</p>
           <ol>
             <li>Turn on <strong>Line of Sight</strong> or click <strong>Auto-Aim</strong> to point directly at the monkey.</li>
-            <li>Fire at <span class="math-expr">v<sub>0</sub> = 20 m/s</span>, then <span class="math-expr">30 m/s</span>, then <span class="math-expr">45 m/s</span>.</li>
+            <li>Launch the <strong>Banana</strong> at <span class="math-expr">v<sub>0</sub> = 20 m/s</span>, then <span class="math-expr">30 m/s</span>, then <span class="math-expr">45 m/s</span>.</li>
             <li>Inspect the synchronized <strong>Strobes</strong>: both drop by the exact same distance <span class="math-expr">Δy = ½gt²</span> from the line of sight!</li>
-            <li>Toggle <strong>Zero-G Ghost</strong> to see the path without gravity.</li>
+            <li>Toggle <strong>Zero-G Ghost</strong> to see the straight-line path without gravity.</li>
           </ol>
         </div>
 
@@ -64,12 +64,23 @@
         </div>
 
         <div class="guide-card-item">
-          <div class="guide-card-title">📋 3. Classroom Notes &amp; Obstacle Building</div>
+          <div class="guide-card-title">📋 3. Classroom Notes (Cliff &amp; 70m Building)</div>
           <p><strong>Question:</strong> A projectile is fired from a 320 m cliff at 42 m/s (30°). Does it clear the 70 m obstacle building?</p>
           <ol>
-            <li>Inspect the <strong>Cornell T-Chart</strong>: horizontal velocity is constant (<span class="math-expr">v<sub>x</sub> = 36.4 m/s</span>) while vertical motion accelerates downward (<span class="math-expr">a<sub>y</sub> = -10 m/s²</span>).</li>
+            <li>Inspect the <strong>Full Solution</strong> and <strong>Cornell T-Chart</strong>: horizontal velocity is constant (<span class="math-expr">v<sub>x</sub> = 36.4 m/s</span>) while vertical motion accelerates downward (<span class="math-expr">a<sub>y</sub> = -10 m/s²</span>).</li>
             <li>Find flight time to the far wall (<span class="math-expr">x = 310 m</span>): <span class="math-expr">t = 8.52 s</span>.</li>
-            <li>Verify height: <span class="math-expr">y = 135.8 m &gt; 70 m</span> (it easily clears!).</li>
+            <li>Verify height: <span class="math-expr">y = 135.8 m &gt; 70 m</span> (clears roof by 65.8 m!).</li>
+          </ol>
+        </div>
+
+        <div class="guide-card-item">
+          <div class="guide-card-title">📝 4. Unit 1 Packet 6 Worksheet Problems</div>
+          <p><strong>In-Class Problems (§6.3 Two-Dimensional Motion):</strong></p>
+          <ol>
+            <li><strong>#46 Box Drop:</strong> Ball rolls off 2 m box at 5 m/s. Range = 3.19 m (<span class="math-expr">t = 0.64 s</span>).</li>
+            <li><strong>#47 100m Cliff:</strong> Lands 300 m away. Solve for launch speed: <span class="math-expr">v<sub>0</sub> = 66.4 m/s</span>.</li>
+            <li><strong>#48 Soccer Kick:</strong> Given <span class="math-expr">v<sub>x</sub> = 20 m/s</span>, <span class="math-expr">v<sub>y</sub> = 12 m/s</span>. Solve for <span class="math-expr">v<sub>0</sub> = 23.3 m/s</span>, <span class="math-expr">θ = 31.0°</span>, range = 49.0 m.</li>
+            <li><strong>#49 Tennis Serve:</strong> Serves horizontally at 40 m/s from 2.5 m. Clears 0.92 m net at 12 m (<span class="math-expr">y = 2.06 m</span>), but lands at 28.6 m &gt; 18.4 m (Invalid / Long!).</li>
           </ol>
         </div>
       </div>
@@ -78,16 +89,16 @@
     <!-- Mode Navigation Tabs -->
     <nav class="mode-nav-bar" role="tablist" aria-label="Simulation Investigation Modes">
       <button type="button" class="mode-pill-btn active" data-mode="monkey" role="tab" aria-selected="true">
-        <span>🐵</span> Feed the Monkey (Gizmo Inquiry)
+        <span>🐵</span> Feed the Monkey (Gizmo)
       </button>
       <button type="button" class="mode-pill-btn" data-mode="mark-rober" role="tab" aria-selected="false">
-        <span>🎯</span> Mark Rober Automated Dartboard
+        <span>🎯</span> Mark Rober Dartboard
       </button>
       <button type="button" class="mode-pill-btn" data-mode="classroom" role="tab" aria-selected="false">
-        <span>📋</span> Classroom Notes &amp; Obstacle
+        <span>📋</span> Classroom &amp; Packet 6
       </button>
       <button type="button" class="mode-pill-btn" data-mode="sandbox" role="tab" aria-selected="false">
-        <span>🧪</span> Free Kinematics Sandbox
+        <span>🧪</span> Free Sandbox
       </button>
     </nav>
 
@@ -125,6 +136,9 @@
               </button>
               <button type="button" class="tool-toggle-btn" id="toggleZeroG" title="Toggle Zero-Gravity Ghost Trajectory">
                 <span>👻</span> Zero-G Ghost
+              </button>
+              <button type="button" class="tool-toggle-btn" id="btnAutoFitZoom" title="Auto-Fit Camera to Trajectory & Scene">
+                <span>🔍</span> Fit View
               </button>
               <button type="button" class="tool-toggle-btn active" id="toggleAudio" title="Toggle Sound Effects">
                 🔊 Audio
@@ -215,10 +229,10 @@
         <div class="card">
           <!-- Top Navigation Pills for Right Column -->
           <div class="tab-nav-pills" role="tablist">
-            <button type="button" class="tab-pill active" data-subtab="controls">⚙️ Parameters &amp; Sliders</button>
-            <button type="button" class="tab-pill" data-subtab="math">📐 Step-by-Step Math</button>
+            <button type="button" class="tab-pill active" data-subtab="controls">⚙️ Parameters</button>
+            <button type="button" class="tab-pill" data-subtab="math">📐 Full Solution</button>
             <button type="button" class="tab-pill" data-subtab="tchart">📋 Cornell T-Chart</button>
-            <button type="button" class="tab-pill" data-subtab="logger">📝 Log &amp; Challenge</button>
+            <button type="button" class="tab-pill" data-subtab="logger">📝 Log &amp; Quiz</button>
           </div>
 
           <!-- SUBTAB 1: Parameters & Sliders -->
@@ -348,48 +362,48 @@
                       <span>Launch Speed (<span class="math-expr">v<sub>0</sub></span>):</span>
                       <span class="param-val-badge" id="classV0Val">42.0 m/s</span>
                     </div>
-                    <input type="range" id="classV0" min="5" max="80" step="1" value="42.0" class="range-slider">
+                    <input type="range" id="classV0" min="1" max="100" step="0.5" value="42.0" class="range-slider">
                   </div>
                   <div class="param-item">
                     <div class="param-label-row">
                       <span>Angle (<span class="math-expr">θ</span>):</span>
                       <span class="param-val-badge" id="classAngleVal">30.0°</span>
                     </div>
-                    <input type="range" id="classAngle" min="0" max="75" step="1" value="30.0" class="range-slider">
+                    <input type="range" id="classAngle" min="0" max="85" step="0.5" value="30.0" class="range-slider">
                   </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
                   <div class="param-item">
                     <div class="param-label-row">
-                      <span>Cliff Height (<span class="math-expr">h<sub>0</sub></span>):</span>
+                      <span>Platform / Launch Height (<span class="math-expr">h<sub>0</sub></span>):</span>
                       <span class="param-val-badge" id="classCliffHVal">320 m</span>
                     </div>
-                    <input type="range" id="classCliffH" min="0" max="400" step="5" value="320" class="range-slider">
+                    <input type="range" id="classCliffH" min="0" max="400" step="0.1" value="320" class="range-slider">
                   </div>
                   <div class="param-item">
                     <div class="param-label-row">
-                      <span>Building Height:</span>
+                      <span>Obstacle / Net Height:</span>
                       <span class="param-val-badge" id="classBldgHVal">70 m</span>
                     </div>
-                    <input type="range" id="classBldgH" min="10" max="200" step="5" value="70" class="range-slider">
+                    <input type="range" id="classBldgH" min="0" max="200" step="0.05" value="70" class="range-slider">
                   </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
                   <div class="param-item">
                     <div class="param-label-row">
-                      <span>Building Start (<span class="math-expr">x<sub>1</sub></span>):</span>
+                      <span>Obstacle Distance (<span class="math-expr">x<sub>1</sub></span>):</span>
                       <span class="param-val-badge" id="classBldgX1Val">230 m</span>
                     </div>
-                    <input type="range" id="classBldgX1" min="50" max="400" step="10" value="230" class="range-slider">
+                    <input type="range" id="classBldgX1" min="0" max="400" step="0.5" value="230" class="range-slider">
                   </div>
                   <div class="param-item">
                     <div class="param-label-row">
-                      <span>Building Width:</span>
+                      <span>Obstacle Width / Court:</span>
                       <span class="param-val-badge" id="classBldgWVal">80 m</span>
                     </div>
-                    <input type="range" id="classBldgW" min="20" max="150" step="5" value="80" class="range-slider">
+                    <input type="range" id="classBldgW" min="0" max="150" step="0.5" value="80" class="range-slider">
                   </div>
                 </div>
               </div>

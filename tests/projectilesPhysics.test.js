@@ -249,3 +249,65 @@ test("Cornell T-Chart data generation", () => {
   assert.ok(Math.abs(tchart.horizontal.current_x - (15 * Math.cos(40 * Math.PI / 180) * 0.435)) < 0.01);
   assert.ok(tchart.timeBridge.label.includes("universal link"));
 });
+
+test("Packet 6 #46 Box Rolling Drop", () => {
+  // Box of height 2m, speed 5 m/s
+  const res = ProjectilesPhysics.calculateBoxDrop({ y0: 2.0, v0: 5.0, g: 9.80 });
+  // t = sqrt(4 / 9.8) = 0.638876 s
+  assert.ok(Math.abs(res.tFall - 0.6389) < 0.001);
+  // range = 5 * 0.6389 = 3.194 m
+  assert.ok(Math.abs(res.range - 3.194) < 0.01);
+});
+
+test("Packet 6 #47 100m Cliff Cannonball Launch", () => {
+  // Cliff 100m tall, lands 300m away
+  const res = ProjectilesPhysics.calculate100mCliff({ y0: 100.0, targetRange: 300.0, g: 9.80 });
+  // tFall = sqrt(200 / 9.8) = 4.5175 s
+  assert.ok(Math.abs(res.tFall - 4.518) < 0.01);
+  // v0 = 300 / 4.5175 = 66.41 m/s
+  assert.ok(Math.abs(res.requiredV0 - 66.41) < 0.1);
+});
+
+test("Packet 6 #48 Soccer Player Kick", () => {
+  // vx = 20 m/s, vy = 12 m/s
+  const res = ProjectilesPhysics.calculateSoccerKick({ vx: 20.0, vy: 12.0, g: 9.80 });
+  // launch speed = sqrt(20^2 + 12^2) = 23.32 m/s
+  assert.ok(Math.abs(res.v0 - 23.32) < 0.02);
+  // launch angle = arctan(12/20) = 30.96 deg
+  assert.ok(Math.abs(res.thetaDeg - 30.96) < 0.05);
+  // flight time = 2 * 12 / 9.8 = 2.449 s
+  assert.ok(Math.abs(res.tFlight - 2.449) < 0.01);
+  // range = 20 * 2.449 = 48.98 m
+  assert.ok(Math.abs(res.range - 48.98) < 0.1);
+});
+
+test("Packet 6 #49 Tennis Serve Challenge", () => {
+  // v0 = 40 m/s, y0 = 2.5m, net at 12m (height 0.92m), service line at 18.4m
+  const res = ProjectilesPhysics.calculateTennisServe({
+    y0: 2.50,
+    v0: 40.0,
+    thetaDeg: 0.0,
+    g: 9.80,
+    xNet: 12.0,
+    hNet: 0.92,
+    xCourt: 18.40
+  });
+
+  // Time to net = 12 / 40 = 0.30 s
+  assert.equal(res.tNet, 0.30);
+  // Height at net = 2.5 - 0.5 * 9.8 * 0.09 = 2.059 m
+  assert.ok(Math.abs(res.yNet - 2.059) < 0.005);
+  // Clears net (2.059 > 0.92)
+  assert.equal(res.clearsNet, true);
+  assert.ok(res.netClearanceMargin > 1.13);
+
+  // Landing time = sqrt(5 / 9.8) = 0.7143 s
+  assert.ok(Math.abs(res.tGround - 0.7143) < 0.002);
+  // Landing distance = 40 * 0.7143 = 28.57 m
+  assert.ok(Math.abs(res.xLand - 28.57) < 0.05);
+  // Lands beyond 18.4m -> Long / Out! Invalid serve!
+  assert.equal(res.inServiceCourt, false);
+  assert.equal(res.isValidServe, false);
+  assert.equal(res.faultReason, "long_out");
+});
+

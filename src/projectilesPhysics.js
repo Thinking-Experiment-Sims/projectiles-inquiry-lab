@@ -347,6 +347,141 @@
   };
 
   /**
+   * Packet 6 Problem 46: Box Rolling Drop
+   * Cubical box (height y0 = 2m), horizontal speed v0 = 5 m/s.
+   */
+  ProjectilesPhysics.calculateBoxDrop = function (params) {
+    const y0 = params && params.y0 !== undefined ? params.y0 : 2.0;
+    const v0 = params && params.v0 !== undefined ? params.v0 : 5.0;
+    const g = params && params.g !== undefined ? params.g : 9.80;
+
+    const tFall = Math.sqrt((2 * y0) / g);
+    const range = v0 * tFall;
+
+    return {
+      y0: y0,
+      v0: v0,
+      vx: v0,
+      vy0: 0,
+      g: g,
+      tFall: tFall,
+      range: range,
+      vyImpact: -g * tFall,
+      speedImpact: Math.hypot(v0, -g * tFall)
+    };
+  };
+
+  /**
+   * Packet 6 Problem 47: 100m Cliff Cannonball Launch
+   * Cliff height y0 = 100m, lands range x = 300m away.
+   */
+  ProjectilesPhysics.calculate100mCliff = function (params) {
+    const y0 = params && params.y0 !== undefined ? params.y0 : 100.0;
+    const targetRange = params && params.targetRange !== undefined ? params.targetRange : 300.0;
+    const g = params && params.g !== undefined ? params.g : 9.80;
+
+    const tFall = Math.sqrt((2 * y0) / g);
+    const requiredV0 = targetRange / tFall;
+
+    return {
+      y0: y0,
+      targetRange: targetRange,
+      g: g,
+      tFall: tFall,
+      requiredV0: requiredV0,
+      vyImpact: -g * tFall,
+      speedImpact: Math.hypot(requiredV0, -g * tFall)
+    };
+  };
+
+  /**
+   * Packet 6 Problem 48: Soccer Player Kick
+   * Given horizontal velocity vx = 20 m/s and vertical velocity vy = 12 m/s.
+   */
+  ProjectilesPhysics.calculateSoccerKick = function (params) {
+    const vx = params && params.vx !== undefined ? params.vx : 20.0;
+    const vy = params && params.vy !== undefined ? params.vy : 12.0;
+    const g = params && params.g !== undefined ? params.g : 9.80;
+
+    const v0 = Math.hypot(vx, vy);
+    const thetaDeg = Math.atan2(vy, vx) * RAD_TO_DEG;
+    const tApex = vy / g;
+    const tFlight = (2 * vy) / g;
+    const maxH = 0.5 * vy * tApex; // or 0.5 * g * tApex^2
+    const range = vx * tFlight;
+
+    return {
+      vx: vx,
+      vy: vy,
+      v0: v0,
+      thetaDeg: thetaDeg,
+      g: g,
+      tApex: tApex,
+      tFlight: tFlight,
+      maxH: maxH,
+      range: range
+    };
+  };
+
+  /**
+   * Packet 6 Problem 49: Tennis Serve Challenge
+   * Horizontal serve at v0 = 40 m/s from height y0 = 2.5m.
+   * Net at xNet = 12m, net height hNet = 0.92m.
+   * Service court boundary at xCourt = 18.4m (12 + 6.4m).
+   */
+  ProjectilesPhysics.calculateTennisServe = function (params) {
+    const y0 = params && params.y0 !== undefined ? params.y0 : 2.50;
+    const v0 = params && params.v0 !== undefined ? params.v0 : 40.0;
+    const thetaDeg = params && params.thetaDeg !== undefined ? params.thetaDeg : 0.0;
+    const g = params && params.g !== undefined ? params.g : 9.80;
+    const xNet = params && params.xNet !== undefined ? params.xNet : 12.0;
+    const hNet = params && params.hNet !== undefined ? params.hNet : 0.92;
+    const xCourt = params && params.xCourt !== undefined ? params.xCourt : 18.40;
+
+    const decomp = ProjectilesPhysics.decomposeVelocity(v0, thetaDeg);
+    const vx = decomp.vx;
+    const vy0 = decomp.vy;
+
+    // 1. Check Net Clearance
+    const tNet = vx > 0 ? xNet / vx : 0;
+    const yNet = y0 + vy0 * tNet - 0.5 * g * tNet * tNet;
+    const clearsNet = yNet > hNet;
+    const netClearanceMargin = yNet - hNet;
+
+    // 2. Check Ground Landing in Service Court
+    // y0 + vy0*t - 0.5*g*t^2 = 0
+    let tGround = 0;
+    const disc = vy0 * vy0 + 2 * g * y0;
+    if (disc >= 0) {
+      tGround = (vy0 + Math.sqrt(disc)) / g;
+    }
+    const xLand = vx * tGround;
+    const inServiceCourt = xLand > xNet && xLand <= xCourt;
+    const isValidServe = clearsNet && inServiceCourt;
+
+    return {
+      y0: y0,
+      v0: v0,
+      thetaDeg: thetaDeg,
+      vx: vx,
+      vy0: vy0,
+      g: g,
+      xNet: xNet,
+      hNet: hNet,
+      xCourt: xCourt,
+      tNet: tNet,
+      yNet: yNet,
+      clearsNet: clearsNet,
+      netClearanceMargin: netClearanceMargin,
+      tGround: tGround,
+      xLand: xLand,
+      inServiceCourt: inServiceCourt,
+      isValidServe: isValidServe,
+      faultReason: !clearsNet ? "net_hit" : (xLand > xCourt ? "long_out" : "none")
+    };
+  };
+
+  /**
    * Generate discretized trajectory points including collision detection.
    */
   ProjectilesPhysics.generateTrajectory = function (params) {
