@@ -2,7 +2,13 @@
  * projectilesApp.js
  * 
  * Interactive controller and canvas renderer for The Thinking Experiment:
- * Projectiles & Target Intercept Inquiry Lab.
+ * Projectiles: Target Intercept & Kinematics Studio.
+ * 
+ * Design System Compliance:
+ * - Primary Teal: #0f7e9b
+ * - Accent Amber: #d67b19
+ * - Pure White & Surface: #ffffff, rgba(255, 255, 255, 0.96)
+ * - Strict prohibition: Zero purple or gold.
  */
 
 (function () {
@@ -13,13 +19,14 @@
   const ctx = canvas.getContext("2d");
   const canvasViewport = document.getElementById("canvasViewport");
 
-  // Buttons & Controls
+  // Playback Buttons
   const btnFire = document.getElementById("btnFire");
   const btnFireText = document.getElementById("btnFireText");
   const btnPause = document.getElementById("btnPause");
   const btnStep = document.getElementById("btnStep");
   const btnReset = document.getElementById("btnReset");
-  const speedSelect = document.getElementById("speedSelect");
+  const btnQuickModeAction = document.getElementById("btnQuickModeAction");
+  const speedPills = document.querySelectorAll(".speed-pill");
 
   // Toggles
   const toggleTargetLine = document.getElementById("toggleTargetLine");
@@ -29,27 +36,47 @@
   const toggleZeroG = document.getElementById("toggleZeroG");
   const toggleAudio = document.getElementById("toggleAudio");
 
-  // Status & Telemetry
-  const statusPill = document.getElementById("statusPill");
-  const statusMessage = document.getElementById("statusMessage");
+  // Guide Drawer
+  const btnToggleGuide = document.getElementById("btnToggleGuide");
+  const btnCloseGuide = document.getElementById("btnCloseGuide");
+  const activityGuide = document.getElementById("activityGuide");
+
+  // Status Banner
+  const lockBanner = document.getElementById("lockBanner");
+  const lockBannerBadge = document.getElementById("lockBannerBadge");
+  const lockBannerText = document.getElementById("lockBannerText");
+  const lockBannerSub = document.getElementById("lockBannerSub");
+
+  // Telemetry Console
   const teleTime = document.getElementById("teleTime");
   const telePos = document.getElementById("telePos");
   const teleVel = document.getElementById("teleVel");
   const teleSpeed = document.getElementById("teleSpeed");
   const teleTargetY = document.getElementById("teleTargetY");
   const teleDrop = document.getElementById("teleDrop");
-  const modeBadge = document.getElementById("modeBadge");
 
-  // Mode Tabs
-  const modeTabs = document.querySelectorAll(".mode-tab");
-  const modePanels = {
-    monkey: document.getElementById("panelMonkey"),
-    "mark-rober": document.getElementById("panelMarkRober"),
-    classroom: document.getElementById("panelClassroom"),
-    sandbox: document.getElementById("panelSandbox")
+  // Mode Nav Pills
+  const modePillBtns = document.querySelectorAll(".mode-pill-btn");
+  const modeControlPanels = {
+    monkey: document.getElementById("controls-monkey"),
+    "mark-rober": document.getElementById("controls-mark-rober"),
+    classroom: document.getElementById("controls-classroom"),
+    sandbox: document.getElementById("controls-sandbox")
   };
 
-  // Sound Engine using Web Audio API
+  // Subtabs in Right Column
+  const tabPills = document.querySelectorAll(".tab-pill");
+  const subtabContents = {
+    controls: document.getElementById("subtab-controls"),
+    math: document.getElementById("subtab-math"),
+    tchart: document.getElementById("subtab-tchart"),
+    logger: document.getElementById("subtab-logger")
+  };
+
+  // Preset Pills Container
+  const presetPillsContainer = document.getElementById("presetPillsContainer");
+
+  // Sound Engine
   class SoundFX {
     constructor() {
       this.enabled = true;
@@ -58,9 +85,7 @@
     init() {
       if (!this.ctx) {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) {
-          this.ctx = new AudioCtx();
-        }
+        if (AudioCtx) this.ctx = new AudioCtx();
       }
       if (this.ctx && this.ctx.state === "suspended") {
         this.ctx.resume();
@@ -75,7 +100,7 @@
       osc.type = "sine";
       osc.frequency.setValueAtTime(320, this.ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+      gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
       osc.connect(gain);
       gain.connect(this.ctx.destination);
@@ -89,8 +114,8 @@
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = "triangle";
-      osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
-      osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.08); // E5
+      osc.frequency.setValueAtTime(523.25, this.ctx.currentTime);
+      osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.08);
       gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
       osc.connect(gain);
@@ -120,21 +145,21 @@
 
   // App State
   const state = {
-    mode: "monkey", // 'monkey', 'mark-rober', 'classroom', 'sandbox'
+    mode: "monkey",
     isRunning: false,
     isPaused: false,
     hasEnded: false,
     simTime: 0,
     playbackSpeed: 1.0,
 
-    // Visual options
+    // Toggles
     showTargetLine: true,
     showStrobes: true,
     showVectors: true,
     showGrid: false,
     showZeroG: false,
 
-    // Feed the Monkey State
+    // Mode 1: Monkey
     monkey: {
       x0: 0,
       y0: 0,
@@ -149,21 +174,21 @@
       hitResult: null
     },
 
-    // Mark Rober State
+    // Mode 2: Mark Rober
     markRober: {
       x0: 0,
       y0: 1.8,
       v0: 15.0,
       alphaDeg: 40.0,
       xBoard: 5.0,
-      boardY: 1.8, // dynamic position on vertical track
+      boardY: 1.8,
       ceilingY: 7.0,
       g: 10.0,
       dartPos: { x: 0, y: 1.8 },
       hitResult: null
     },
 
-    // Classroom Notes State
+    // Mode 3: Classroom Notes
     classroom: {
       x0: 0,
       y0: 320,
@@ -177,7 +202,7 @@
       hitResult: null
     },
 
-    // Sandbox State
+    // Mode 4: Sandbox
     sandbox: {
       x0: 0,
       y0: 10.0,
@@ -190,37 +215,49 @@
       hitResult: null
     },
 
-    // Interaction Drag State
-    drag: {
-      isDragging: false,
-      target: null // 'cannonAngle', 'cannonPos', 'monkeyTarget', 'dartboard'
-    },
-
-    // Trials Data Log
     trials: []
   };
 
-  // Precomputed Trajectory & Strobes cache
   let currentTrajectory = [];
   let currentStrobes = [];
   let currentZeroGTrajectory = [];
 
   // ==========================================================================
-  // Resize & Coordinate Mapping
+  // Math Renderer Helper (KaTeX + Pure Typographic HTML Fallback)
+  // ==========================================================================
+
+  function renderMathBlock(container, latexString, htmlFallback) {
+    if (!container) return;
+    if (window.katex && typeof window.katex.render === "function") {
+      try {
+        window.katex.render(latexString, container, {
+          displayMode: true,
+          throwOnError: false
+        });
+        return;
+      } catch (e) {
+        console.warn("KaTeX error, falling back to HTML:", e);
+      }
+    }
+    container.innerHTML = htmlFallback;
+  }
+
+  // ==========================================================================
+  // Viewport & Coordinate Transforms
   // ==========================================================================
 
   function resizeCanvas() {
     const rect = canvasViewport.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     const displayWidth = rect.width;
-    const displayHeight = Math.min(540, Math.max(380, displayWidth * 0.58));
+    const displayHeight = displayWidth * (9 / 16);
 
     canvas.width = displayWidth * dpr;
     canvas.height = displayHeight * dpr;
     canvas.style.width = displayWidth + "px";
     canvas.style.height = displayHeight + "px";
 
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // reset transform
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
     render();
   }
@@ -239,27 +276,27 @@
 
     if (state.mode === "monkey") {
       worldXMin = -3;
-      worldXMax = Math.max(state.monkey.xm + 8, 35);
-      worldYMin = -2;
-      worldYMax = Math.max(state.monkey.ym + 6, 24);
+      worldXMax = Math.max(state.monkey.xm + 7, 34);
+      worldYMin = -1.5;
+      worldYMax = Math.max(state.monkey.ym + 5, 23);
     } else if (state.mode === "mark-rober") {
       worldXMin = -1.5;
       worldXMax = Math.max(state.markRober.xBoard + 3, 9);
       worldYMin = -0.5;
-      worldYMax = Math.max(state.markRober.ceilingY + 1.5, 9.5);
+      worldYMax = Math.max(state.markRober.ceilingY + 1.2, 9.2);
     } else if (state.mode === "classroom") {
-      worldXMin = -20;
-      worldXMax = 420;
+      worldXMin = -25;
+      worldXMax = 410;
       worldYMin = -20;
-      worldYMax = 390;
+      worldYMax = 380;
     } else if (state.mode === "sandbox") {
-      worldXMin = -5;
-      worldXMax = 80;
-      worldYMin = -5;
-      worldYMax = 55;
+      worldXMin = -4;
+      worldXMax = 75;
+      worldYMin = -4;
+      worldYMax = 50;
     }
 
-    const padding = 45;
+    const padding = 42;
     const availW = w - padding * 2;
     const availH = h - padding * 2;
 
@@ -295,15 +332,13 @@
   }
 
   // ==========================================================================
-  // Physics Computations & Trajectory Refresh
+  // Physics Computation
   // ==========================================================================
 
   function refreshCurrentPhysics() {
     if (state.mode === "monkey") {
       const m = state.monkey;
       const directAim = Math.atan2(m.ym - m.y0, m.xm - m.x0) * (180 / Math.PI);
-      const autoAimText = document.getElementById("autoAimAngleText");
-      if (autoAimText) autoAimText.textContent = directAim.toFixed(1) + "°";
 
       const trajRes = ProjectilesPhysics.generateTrajectory({
         x0: m.x0,
@@ -340,7 +375,7 @@
         v0: m.v0,
         thetaDeg: m.thetaDeg,
         g: m.g,
-        catchRadius: 0.60
+        catchRadius: 0.65
       });
 
     } else if (state.mode === "mark-rober") {
@@ -416,7 +451,7 @@
   }
 
   // ==========================================================================
-  // Simulation Step & Animation Loop
+  // Simulation Loop
   // ==========================================================================
 
   let lastTimestamp = null;
@@ -455,33 +490,29 @@
         t: t
       });
       m.bananaPos = pos;
-
-      // Monkey free-fall: drops with 0.5 * g * t^2
       m.monkeyY = Math.max(0, m.ym - 0.5 * m.g * t * t);
 
-      // Check intercept or ground impact
       const tHit = m.hitResult.tIntercept;
       if (t >= tHit && !state.hasEnded) {
+        state.hasEnded = true;
         if (m.hitResult.isHit) {
-          state.hasEnded = true;
           m.isCaught = true;
           sfx.playHit();
-          setStatus("hit", `🎉 Intercept! Monkey caught the banana at t = ${tHit.toFixed(2)}s, height = ${m.hitResult.yMonkeyAtTime.toFixed(2)}m!`);
-          logTrial("Feed the Monkey", m.v0, m.thetaDeg, m.g, tHit, m.xm, m.hitResult.yMonkeyAtTime, "CAUGHT");
+          setBanner("hit", "INTERCEPT HIT", `🎉 Monkey caught the banana at t = ${tHit.toFixed(2)}s, elevation = ${m.hitResult.yMonkeyAtTime.toFixed(2)}m!`);
+          logTrial("Feed the Monkey", m.v0, m.thetaDeg, tHit, m.xm, m.hitResult.yMonkeyAtTime, "CAUGHT");
         } else {
-          state.hasEnded = true;
           sfx.playMiss();
           const dev = m.hitResult.verticalDeviation.toFixed(2);
           const dir = m.bananaPos.y > m.monkeyY ? "above" : "below";
-          setStatus("miss", `Missed! Banana passed ${dev}m ${dir} the monkey.`);
-          logTrial("Feed the Monkey", m.v0, m.thetaDeg, m.g, tHit, m.bananaPos.x, m.bananaPos.y, `MISS (${dir})`);
+          setBanner("miss", "MISSED TARGET", `Banana passed ${dev}m ${dir} the falling monkey.`);
+          logTrial("Feed the Monkey", m.v0, m.thetaDeg, tHit, m.bananaPos.x, m.bananaPos.y, `MISS (${dir})`);
         }
         pauseSimulation();
       } else if (pos.y <= 0 && !state.hasEnded) {
         state.hasEnded = true;
         sfx.playMiss();
-        setStatus("miss", `Banana hit ground at x = ${pos.x.toFixed(1)}m before reaching monkey.`);
-        logTrial("Feed the Monkey", m.v0, m.thetaDeg, m.g, t, pos.x, 0, "GROUND HIT");
+        setBanner("miss", "GROUND IMPACT", `Banana struck the ground before reaching monkey.`);
+        logTrial("Feed the Monkey", m.v0, m.thetaDeg, t, pos.x, 0, "GROUND HIT");
         pauseSimulation();
       }
 
@@ -498,25 +529,22 @@
       });
       mr.dartPos = pos;
 
-      // Motorized dartboard slides dynamically along track towards target height H
       const targetH = mr.hitResult.targetHeightH;
       const tBoard = mr.hitResult.tBoard;
       const progress = Math.min(1, t / tBoard);
-      // Smooth dynamic slide
       mr.boardY = mr.y0 + (targetH - mr.y0) * progress;
 
-      // Check ceiling collision
       if (mr.hitResult.hitsCeiling && t >= mr.hitResult.tCeiling && !state.hasEnded) {
         state.hasEnded = true;
         sfx.playMiss();
-        setStatus("miss", `💥 Dart hit the workshop ceiling at x = ${mr.hitResult.xCeiling.toFixed(1)}m, t = ${mr.hitResult.tCeiling.toFixed(2)}s!`);
-        logTrial("Mark Rober", mr.v0, mr.alphaDeg, mr.g, mr.hitResult.tCeiling, mr.hitResult.xCeiling, mr.ceilingY, "CEILING COLLISION");
+        setBanner("miss", "CEILING HIT", `💥 Dart collided with workshop ceiling at x = ${mr.hitResult.xCeiling.toFixed(1)}m!`);
+        logTrial("Mark Rober", mr.v0, mr.alphaDeg, mr.hitResult.tCeiling, mr.hitResult.xCeiling, mr.ceilingY, "CEILING HIT");
         pauseSimulation();
       } else if (t >= tBoard && !state.hasEnded) {
         state.hasEnded = true;
         sfx.playHit();
-        setStatus("hit", `🎯 Bullseye! Dart struck dartboard bullseye at height H = ${targetH.toFixed(2)}m (t = ${tBoard.toFixed(2)}s)!`);
-        logTrial("Mark Rober", mr.v0, mr.alphaDeg, mr.g, tBoard, mr.xBoard, targetH, "BULLSEYE HIT");
+        setBanner("hit", "BULLSEYE HIT", `🎯 Perfect Bullseye! Dartboard caught dart at height H = ${targetH.toFixed(2)}m (t = ${tBoard.toFixed(2)}s)!`);
+        logTrial("Mark Rober", mr.v0, mr.alphaDeg, tBoard, mr.xBoard, targetH, "BULLSEYE");
         pauseSimulation();
       }
 
@@ -537,20 +565,20 @@
       if (hit.collisionType !== "none" && t >= hit.collisionT && !state.hasEnded) {
         state.hasEnded = true;
         sfx.playMiss();
-        setStatus("miss", `Building Collision: Hit ${hit.collisionType === "roof" ? "roof" : "front wall"} at x = ${hit.collisionX.toFixed(1)}m, y = ${hit.collisionY.toFixed(1)}m!`);
-        logTrial("Classroom Obstacle", cp.v0, cp.thetaDeg, cp.g, hit.collisionT, hit.collisionX, hit.collisionY, "BUILDING HIT");
+        setBanner("miss", "BUILDING COLLISION", `Crashed into building ${hit.collisionType === "roof" ? "roof" : "front wall"} at x = ${hit.collisionX.toFixed(1)}m!`);
+        logTrial("Classroom", cp.v0, cp.thetaDeg, hit.collisionT, hit.collisionX, hit.collisionY, "BUILDING HIT");
         pauseSimulation();
       } else if (pos.x >= cp.x2 && !state.hasEnded) {
         state.hasEnded = true;
         sfx.playHit();
-        setStatus("hit", `Cleared Building! Height at far edge was ${hit.y2.toFixed(1)}m (cleared ${cp.bldgHeight}m roof by ${(hit.y2 - cp.bldgHeight).toFixed(1)}m)!`);
-        logTrial("Classroom Obstacle", cp.v0, cp.thetaDeg, cp.g, t, pos.x, pos.y, "CLEARED BUILDING");
+        setBanner("hit", "CLEARED BUILDING", `Cleared Building! Height at far edge was ${hit.y2.toFixed(1)}m (cleared ${cp.bldgHeight}m roof by ${(hit.y2 - cp.bldgHeight).toFixed(1)}m)!`);
+        logTrial("Classroom", cp.v0, cp.thetaDeg, t, pos.x, pos.y, "CLEARED");
         pauseSimulation();
       } else if (pos.y <= 0 && !state.hasEnded) {
         state.hasEnded = true;
         sfx.playMiss();
-        setStatus("miss", `Landed on ground at x = ${pos.x.toFixed(1)}m.`);
-        logTrial("Classroom Obstacle", cp.v0, cp.thetaDeg, cp.g, t, pos.x, 0, "GROUND HIT");
+        setBanner("miss", "GROUND IMPACT", `Landed on ground at x = ${pos.x.toFixed(1)}m.`);
+        logTrial("Classroom", cp.v0, cp.thetaDeg, t, pos.x, 0, "GROUND HIT");
         pauseSimulation();
       }
 
@@ -569,9 +597,9 @@
 
       if (pos.y <= 0 && !state.hasEnded) {
         state.hasEnded = true;
-        sfx.playMiss();
-        setStatus("ready", `Flight complete. Total flight time: ${t.toFixed(2)}s, Range: ${pos.x.toFixed(1)}m.`);
-        logTrial("Sandbox", sb.v0, sb.thetaDeg, sb.g, t, pos.x, 0, "LANDED");
+        sfx.playHit();
+        setBanner("ready", "FLIGHT COMPLETE", `Landed at x = ${pos.x.toFixed(1)}m, flight time = ${t.toFixed(2)}s.`);
+        logTrial("Sandbox", sb.v0, sb.thetaDeg, t, pos.x, 0, "LANDED");
         pauseSimulation();
       }
     }
@@ -593,21 +621,21 @@
 
     btnFire.disabled = true;
     btnPause.disabled = false;
-    setStatus("running", "Projectile in flight...");
+    setBanner("running", "IN FLIGHT", "Projectile is in motion. Tracking telemetry...");
     sfx.playLaunch();
     requestAnimationFrame(runSimulationLoop);
   }
 
   function pauseSimulation() {
     state.isPaused = true;
-    btnPause.innerHTML = '<span class="btn-icon">▶</span> Resume';
+    btnPause.innerHTML = '<span>▶</span> Resume';
     btnFire.disabled = false;
-    btnFireText.textContent = "Restart Launch";
+    btnFireText.textContent = "Relaunch";
   }
 
   function resumeSimulation() {
     state.isPaused = false;
-    btnPause.innerHTML = '<span class="btn-icon">❚❚</span> Pause';
+    btnPause.innerHTML = '<span>❚❚</span> Pause';
     lastTimestamp = null;
     requestAnimationFrame(runSimulationLoop);
   }
@@ -617,7 +645,7 @@
       state.isRunning = true;
       state.isPaused = true;
       btnPause.disabled = false;
-      btnPause.innerHTML = '<span class="btn-icon">▶</span> Resume';
+      btnPause.innerHTML = '<span>▶</span> Resume';
     }
     stepSimulation(0.05);
     render();
@@ -632,32 +660,36 @@
 
     btnFire.disabled = false;
     btnPause.disabled = true;
-    btnPause.innerHTML = '<span class="btn-icon">❚❚</span> Pause';
+    btnPause.innerHTML = '<span>❚❚</span> Pause';
     btnFireText.textContent = state.mode === "mark-rober" ? "Throw Dart" : "Fire Cannon";
 
     if (state.mode === "monkey") {
       state.monkey.bananaPos = { x: state.monkey.x0, y: state.monkey.y0 };
       state.monkey.monkeyY = state.monkey.ym;
       state.monkey.isCaught = false;
+      setBanner("ready", "FEED THE MONKEY", "Aim directly along line of sight. Both will drop by ½gt²!");
     } else if (state.mode === "mark-rober") {
       state.markRober.dartPos = { x: state.markRober.x0, y: state.markRober.y0 };
       state.markRober.boardY = state.markRober.y0;
+      setBanner("ready", "MARK ROBER DARTBOARD", "Release dart to see motorized board slide along vertical track to intercept!");
     } else if (state.mode === "classroom") {
       state.classroom.projPos = { x: state.classroom.x0, y: state.classroom.y0 };
+      setBanner("ready", "CLASSROOM NOTES", "Launch from 320m cliff over 70m building. Watch horizontal & vertical kinematics!");
     } else if (state.mode === "sandbox") {
       state.sandbox.projPos = { x: state.sandbox.x0, y: state.sandbox.y0 };
+      setBanner("ready", "FREE SANDBOX", "Adjust velocity, launch angle, and platform height freely.");
     }
 
-    setStatus("ready", "Ready to Launch");
     refreshCurrentPhysics();
     updateTelemetryHUD();
     render();
   }
 
-  function setStatus(type, message) {
-    statusPill.className = `status-pill status-${type}`;
-    statusPill.textContent = type.toUpperCase();
-    statusMessage.textContent = message;
+  function setBanner(type, badgeText, message) {
+    lockBanner.className = `lock-banner ${type}`;
+    lockBannerBadge.textContent = badgeText;
+    lockBannerText.textContent = message;
+    lockBannerSub.textContent = type.toUpperCase();
   }
 
   // ==========================================================================
@@ -676,9 +708,8 @@
       v0 = state.monkey.v0;
       thetaDeg = state.monkey.thetaDeg;
       g = state.monkey.g;
-      teleTargetY.textContent = state.monkey.monkeyY.toFixed(2) + " m";
-      const drop = 0.5 * g * t * t;
-      teleDrop.textContent = drop.toFixed(2) + " m";
+      teleTargetY.textContent = state.monkey.monkeyY.toFixed(1) + " m";
+      teleDrop.textContent = (0.5 * g * t * t).toFixed(2) + " m";
     } else if (state.mode === "mark-rober") {
       pos = state.markRober.dartPos;
       v0 = state.markRober.v0;
@@ -691,7 +722,7 @@
       v0 = state.classroom.v0;
       thetaDeg = state.classroom.thetaDeg;
       g = state.classroom.g;
-      teleTargetY.textContent = state.classroom.bldgHeight.toFixed(1) + " m";
+      teleTargetY.textContent = state.classroom.bldgHeight.toFixed(0) + " m";
       teleDrop.textContent = (0.5 * g * t * t).toFixed(1) + " m";
     } else {
       pos = state.sandbox.projPos;
@@ -702,7 +733,7 @@
       teleDrop.textContent = (0.5 * g * t * t).toFixed(2) + " m";
     }
 
-    telePos.textContent = `(${pos.x.toFixed(1)} m, ${pos.y.toFixed(1)} m)`;
+    telePos.textContent = `(${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}) m`;
 
     const decomp = ProjectilesPhysics.decomposeVelocity(v0, thetaDeg);
     const vel = ProjectilesPhysics.getVelocityAtTime({
@@ -715,14 +746,18 @@
     teleVel.textContent = `(${vel.vx.toFixed(1)}, ${vel.vy.toFixed(1)}) m/s`;
     teleSpeed.textContent = vel.speed.toFixed(1) + " m/s";
 
-    // Update live values in Cornell T-Chart
+    // Update live evaluation values in Cornell T-Chart
     const tcSubX = document.getElementById("tcSubX");
     const tcSubVy = document.getElementById("tcSubVy");
     const tcSubY = document.getElementById("tcSubY");
-    if (tcSubX) tcSubX.textContent = `${pos.x.toFixed(1)} m (t = ${t.toFixed(2)}s)`;
-    if (tcSubVy) tcSubVy.textContent = `${vel.vy.toFixed(1)} m/s`;
-    if (tcSubY) tcSubY.textContent = `${pos.y.toFixed(1)} m`;
+    if (tcSubX) tcSubX.textContent = `x = ${pos.x.toFixed(1)} m`;
+    if (tcSubVy) tcSubVy.textContent = `vᵧ = ${vel.vy.toFixed(1)} m/s`;
+    if (tcSubY) tcSubY.textContent = `y = ${pos.y.toFixed(1)} m`;
   }
+
+  // ==========================================================================
+  // Beautiful Math Solution Card (Fixed KaTeX + Clean Stacked Fractions)
+  // ==========================================================================
 
   function updatePedagogyCards() {
     let v0 = 26, thetaDeg = 32.6, g = 9.80, x0 = 0, y0 = 0;
@@ -733,6 +768,52 @@
       g = state.monkey.g;
       x0 = state.monkey.x0;
       y0 = state.monkey.y0;
+
+      const mathContainer = document.getElementById("mathCardContent");
+      const m = state.monkey;
+      const res = m.hitResult;
+      const directDeg = res ? res.directAimAngleDeg.toFixed(1) : "32.6";
+      const tInt = res ? res.tIntercept.toFixed(2) : "1.00";
+      const drop = res ? res.dropDist.toFixed(2) : "4.90";
+      const yCatch = res ? res.yMonkeyAtTime.toFixed(2) : "11.10";
+
+      const htmlContent = `
+        <div class="math-title">
+          <span>🐵 Feed the Monkey: Free-Fall Intercept Proof</span>
+          <span class="lab-badge" style="font-size: 0.72rem;">Gizmo Activity</span>
+        </div>
+        
+        <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 0.5rem;">
+          1. Direct Line-of-Sight Aim Angle (<span class="math-expr">θ<sub>aim</sub></span>):
+        </p>
+        <div class="math-eq-row">
+          <span class="math-expr">tan(θ)</span> = 
+          <span class="fraction"><span class="num">y<sub>m</sub> - y<sub>0</sub></span><span class="den">x<sub>m</sub> - x<sub>0</sub></span></span> = 
+          <span class="fraction"><span class="num">${m.ym.toFixed(1)} - ${m.y0.toFixed(1)}</span><span class="den">${m.xm.toFixed(1)} - ${m.x0.toFixed(1)}</span></span> &implies; 
+          <span class="math-eval-tag">θ = ${directDeg}°</span>
+        </div>
+
+        <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 0.5rem;">
+          2. Equal Vertical Drop Below Line-of-Sight (<span class="math-expr">Δy</span>):
+        </p>
+        <div class="math-eq-row">
+          <span class="math-expr">t<sub>intercept</sub></span> = 
+          <span class="fraction"><span class="num">Δx</span><span class="den">v<sub>0</sub>·cos(θ)</span></span> = 
+          <span class="math-eval-tag">${tInt} s</span>
+        </div>
+        <div class="math-eq-row">
+          <span class="math-expr">Δy<sub>drop</sub></span> = 
+          <span class="fraction"><span class="num">1</span><span class="den">2</span></span>·g·t² = 
+          <span class="fraction"><span class="num">1</span><span class="den">2</span></span>·(${g.toFixed(1)})·(${tInt})² = 
+          <span class="math-eval-tag">${drop} m</span>
+        </div>
+
+        <div class="status-badge-inline safe" style="width: 100%; justify-content: center; margin-top: 0.4rem;">
+          ${res && res.isAimedAtMonkey ? `🎯 Aimed directly: Banana & Monkey both drop by ${drop}m &rarr; GUARANTEED HIT at ${yCatch}m!` : `⚠️ Not aimed directly (${thetaDeg.toFixed(1)}° vs ${directDeg}°). Misses target.`}
+        </div>
+      `;
+      if (mathContainer) mathContainer.innerHTML = htmlContent;
+
     } else if (state.mode === "mark-rober") {
       v0 = state.markRober.v0;
       thetaDeg = state.markRober.alphaDeg;
@@ -740,26 +821,56 @@
       x0 = state.markRober.x0;
       y0 = state.markRober.y0;
 
-      // Update Mark Rober Solution card
-      const res = state.markRober.hitResult;
-      if (res) {
-        document.getElementById("rmX").textContent = res.xBoard.toFixed(1);
-        document.getElementById("rmVox").textContent = res.vx.toFixed(2);
-        document.getElementById("rmT").textContent = res.tBoard.toFixed(3);
-        document.getElementById("rmH").textContent = res.targetHeightH.toFixed(2);
-        document.getElementById("rmHmax").textContent = res.maxDartHeight.toFixed(2);
+      const mathContainer = document.getElementById("mathCardContent");
+      const mr = state.markRober;
+      const res = mr.hitResult;
 
-        const ceilStatus = document.getElementById("rmCeilingStatus");
-        if (res.hitsCeiling) {
-          ceilStatus.style.background = "var(--color-danger-bg)";
-          ceilStatus.style.color = "var(--color-danger)";
-          ceilStatus.textContent = `⚠️ Collision! Dart hits ceiling at x = ${res.xCeiling.toFixed(1)}m before board!`;
-        } else {
-          ceilStatus.style.background = "var(--color-teal-subtle)";
-          ceilStatus.style.color = "var(--color-teal-dark)";
-          ceilStatus.textContent = `Ceiling at ${res.ceilingY.toFixed(1)}m > ${res.maxDartHeight.toFixed(2)}m → ✅ Safe clearance!`;
-        }
-      }
+      const tBoard = res ? res.tBoard.toFixed(3) : "0.435";
+      const targetH = res ? res.targetHeightH.toFixed(2) : "5.05";
+      const tApex = res ? res.tApex.toFixed(3) : "0.964";
+      const hMax = res ? res.maxDartHeight.toFixed(2) : "6.45";
+      const vx = res ? res.vx.toFixed(2) : "11.49";
+      const vy = res ? res.vy.toFixed(2) : "9.64";
+
+      const htmlContent = `
+        <div class="math-title">
+          <span>🎯 Mark Rober Automated Dartboard Solution</span>
+          <span class="lab-badge" style="font-size: 0.72rem;">Worksheet Problems</span>
+        </div>
+
+        <p style="font-size: 0.8rem; font-weight: 700; color: var(--ink); margin-bottom: 0.35rem;">
+          Question 1: What height H must the target bullseye be to guarantee a hit?
+        </p>
+        <div class="math-eq-row">
+          <span class="math-expr">t</span> = 
+          <span class="fraction"><span class="num">x</span><span class="den">v<sub>0</sub>·cos(α)</span></span> = 
+          <span class="fraction"><span class="num">${mr.xBoard.toFixed(1)} m</span><span class="den">${vx} m/s</span></span> = 
+          <span class="math-eval-tag">t = ${tBoard} s</span>
+        </div>
+        <div class="math-eq-row">
+          <span class="math-expr">H</span> = 
+          h<sub>0</sub> + v<sub>0y</sub>·t - <span class="fraction"><span class="num">1</span><span class="den">2</span></span>·g·t² = 
+          ${mr.y0.toFixed(1)} + (${vy})·(${tBoard}) - 0.5·(${g.toFixed(1)})·(${tBoard})² = 
+          <span class="math-eval-tag" style="background: var(--accent-amber-light); color: var(--accent-amber-dark);">H = ${targetH} m</span>
+        </div>
+
+        <p style="font-size: 0.8rem; font-weight: 700; color: var(--ink); margin-top: 0.65rem; margin-bottom: 0.35rem;">
+          Question 2: What is the maximum height h<sub>max</sub> the dart will reach?
+        </p>
+        <div class="math-eq-row">
+          <span class="math-expr">h<sub>max</sub></span> = 
+          h<sub>0</sub> + <span class="fraction"><span class="num">v<sub>0y</sub>²</span><span class="den">2g</span></span> = 
+          ${mr.y0.toFixed(1)} + <span class="fraction"><span class="num">(${vy})²</span><span class="den">2·(${g.toFixed(1)})</span></span> = 
+          <span class="math-eval-tag">h<sub>max</sub> = ${hMax} m</span>
+          <span style="font-size: 0.78rem; color: var(--muted); margin-left: 0.5rem;">(at t<sub>apex</sub> = ${tApex} s)</span>
+        </div>
+
+        <div class="status-badge-inline ${res && res.hitsCeiling ? 'warn' : 'safe'}" style="width: 100%; justify-content: center; margin-top: 0.4rem;">
+          ${res && res.hitsCeiling ? `⚠️ Workshop Ceiling Hit! Roof at ${mr.ceilingY.toFixed(1)}m intercepts dart at x = ${res.xCeiling.toFixed(1)}m!` : `✅ Workshop Ceiling at ${mr.ceilingY.toFixed(1)}m > ${hMax}m &rarr; Safe clearance!`}
+        </div>
+      `;
+      if (mathContainer) mathContainer.innerHTML = htmlContent;
+
     } else if (state.mode === "classroom") {
       v0 = state.classroom.v0;
       thetaDeg = state.classroom.thetaDeg;
@@ -767,34 +878,87 @@
       x0 = state.classroom.x0;
       y0 = state.classroom.y0;
 
-      // Update Classroom math card
-      const res = state.classroom.hitResult;
-      if (res) {
-        document.getElementById("cpHmax").textContent = res.maxH.toFixed(2);
-        document.getElementById("cpTup").textContent = res.tApex.toFixed(2);
-        document.getElementById("cpXfar").textContent = state.classroom.x2.toFixed(0);
-        document.getElementById("cpTfar").textContent = res.t2.toFixed(2);
-        document.getElementById("cpYfar").textContent = res.y2.toFixed(1);
+      const mathContainer = document.getElementById("mathCardContent");
+      const cp = state.classroom;
+      const res = cp.hitResult;
 
-        const clearStatus = document.getElementById("cpClearStatus");
-        if (res.clearsBuilding) {
-          clearStatus.style.background = "var(--color-success-bg)";
-          clearStatus.style.color = "var(--color-success)";
-          clearStatus.textContent = `✅ y = ${res.y2.toFixed(1)}m > ${state.classroom.bldgHeight}m: Projectile clears building!`;
-        } else {
-          clearStatus.style.background = "var(--color-danger-bg)";
-          clearStatus.style.color = "var(--color-danger)";
-          clearStatus.textContent = `❌ Building hit: Collides with ${res.collisionType === "roof" ? "roof" : "front wall"}!`;
-        }
-      }
+      const maxH = res ? res.maxH.toFixed(2) : "342.05";
+      const tApex = res ? res.tApex.toFixed(2) : "2.10";
+      const t2 = res ? res.t2.toFixed(2) : "8.52";
+      const y2 = res ? res.y2.toFixed(1) : "135.8";
+      const vx = res ? res.vx.toFixed(1) : "36.4";
+      const vy = res ? res.vy.toFixed(1) : "21.0";
+
+      const htmlContent = `
+        <div class="math-title">
+          <span>📋 Classroom Notes: Cliff &amp; Building Obstacle (p. 7–8, 13–14)</span>
+          <span class="lab-badge" style="font-size: 0.72rem;">GoodNotes Lecture</span>
+        </div>
+
+        <p style="font-size: 0.8rem; font-weight: 700; color: var(--ink); margin-bottom: 0.35rem;">
+          Part a) Maximum Height (<span class="math-expr">h<sub>max</sub></span>):
+        </p>
+        <div class="math-eq-row">
+          <span class="math-expr">h<sub>max</sub></span> = 
+          y<sub>0</sub> + <span class="fraction"><span class="num">v<sub>0y</sub>²</span><span class="den">2g</span></span> = 
+          ${cp.y0} + <span class="fraction"><span class="num">(${vy})²</span><span class="den">2·(${g.toFixed(1)})</span></span> = 
+          <span class="math-eval-tag">342.05 m</span>
+          <span style="font-size: 0.78rem; color: var(--muted); margin-left: 0.5rem;">(t<sub>up</sub> = ${tApex} s)</span>
+        </div>
+
+        <p style="font-size: 0.8rem; font-weight: 700; color: var(--ink); margin-top: 0.65rem; margin-bottom: 0.35rem;">
+          Part b) Building Clearance Check (at far edge x = ${cp.x2} m):
+        </p>
+        <div class="math-eq-row">
+          <span class="math-expr">t</span> = 
+          <span class="fraction"><span class="num">Δx</span><span class="den">v<sub>x</sub></span></span> = 
+          <span class="fraction"><span class="num">${cp.x2} m</span><span class="den">${vx} m/s</span></span> = 
+          <span class="math-eval-tag">t = ${t2} s</span>
+        </div>
+        <div class="math-eq-row">
+          <span class="math-expr">y(t)</span> = 
+          ${cp.y0} + (${vy})·(${t2}) - <span class="fraction"><span class="num">1</span><span class="den">2</span></span>·(${g.toFixed(1)})·(${t2})² = 
+          <span class="math-eval-tag" style="background: var(--primary-teal-light); color: var(--primary-teal-dark);">y = ${y2} m</span>
+        </div>
+
+        <div class="status-badge-inline ${res && res.clearsBuilding ? 'safe' : 'warn'}" style="width: 100%; justify-content: center; margin-top: 0.4rem;">
+          ${res && res.clearsBuilding ? `✅ y = ${y2}m > ${cp.bldgHeight}m: Projectile clears building roof by ${(y2 - cp.bldgHeight).toFixed(1)}m!` : `❌ Building collision: Strikes ${res ? res.collisionType : 'wall'}!`}
+        </div>
+      `;
+      if (mathContainer) mathContainer.innerHTML = htmlContent;
+
     } else {
       v0 = state.sandbox.v0;
       thetaDeg = state.sandbox.thetaDeg;
       g = state.sandbox.g;
       x0 = state.sandbox.x0;
       y0 = state.sandbox.y0;
+
+      const mathContainer = document.getElementById("mathCardContent");
+      const decomp = ProjectilesPhysics.decomposeVelocity(v0, thetaDeg);
+      const tFlight = ProjectilesPhysics.calculateTimeOfFlight(y0, decomp.vy, g, 0);
+      const range = (decomp.vx * tFlight).toFixed(1);
+      const maxH = ProjectilesPhysics.calculateMaxHeight(y0, decomp.vy, g).toFixed(1);
+
+      const htmlContent = `
+        <div class="math-title">
+          <span>🧪 Free Sandbox Kinematics Equations</span>
+          <span class="lab-badge" style="font-size: 0.72rem;">Ideal Physics</span>
+        </div>
+        <div class="math-eq-row">
+          <span>v<sub>0x</sub> = ${decomp.vx.toFixed(2)} m/s &bull; v<sub>0y</sub> = ${decomp.vy.toFixed(2)} m/s</span>
+        </div>
+        <div class="math-eq-row">
+          <span>Total Flight Time: <strong>${tFlight.toFixed(2)} s</strong> &bull; Range: <strong>${range} m</strong></span>
+        </div>
+        <div class="math-eq-row">
+          <span>Max Apex Height: <strong>${maxH} m</strong></span>
+        </div>
+      `;
+      if (mathContainer) mathContainer.innerHTML = htmlContent;
     }
 
+    // Update Cornell T-Chart
     const decomp = ProjectilesPhysics.decomposeVelocity(v0, thetaDeg);
     const tcVx = document.getElementById("tcVx");
     const tcAy = document.getElementById("tcAy");
@@ -808,7 +972,7 @@
   }
 
   // ==========================================================================
-  // Canvas Rendering Pipeline
+  // Canvas Rendering Pipeline (Laboratory Quality Vector Graphics)
   // ==========================================================================
 
   function render() {
@@ -819,10 +983,8 @@
 
     const bounds = getViewportBounds();
 
-    // 1. Metric Grid & Background
     drawBackground(bounds, w, h);
 
-    // 2. Scene Scenery per Mode
     if (state.mode === "monkey") {
       drawMonkeyScene(bounds);
     } else if (state.mode === "mark-rober") {
@@ -833,27 +995,23 @@
       drawSandboxScene(bounds);
     }
 
-    // 3. Trajectory Trails & Strobe Dots
     drawTrajectories(bounds);
-
-    // 4. Projectile & Vectors
     drawProjectileAndVectors(bounds);
   }
 
   function drawBackground(b, w, h) {
-    // Soft sky gradient
+    // Sky gradient matching The Thinking Experiment theme
     const sky = ctx.createLinearGradient(0, 0, 0, h);
     sky.addColorStop(0, "#ffffff");
     sky.addColorStop(1, "#f4f9fb");
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
 
-    // Grid if enabled
+    // Metric Grid
     if (state.showGrid) {
       ctx.strokeStyle = "#e1ebf0";
       ctx.lineWidth = 1;
       ctx.beginPath();
-
       const xStep = state.mode === "classroom" ? 50 : 5;
       const yStep = state.mode === "classroom" ? 50 : 5;
 
@@ -872,80 +1030,88 @@
       ctx.stroke();
     }
 
-    // Ground line
+    // Ground line & floor hatch
     const gL = worldToScreen(b.worldXMin, 0, b);
     const gR = worldToScreen(b.worldXMax, 0, b);
     ctx.strokeStyle = "#0f7e9b";
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(gL.x, gL.y);
     ctx.lineTo(gR.x, gR.y);
     ctx.stroke();
 
-    // Ground fill
     ctx.fillStyle = "#eaf2f5";
     ctx.fillRect(gL.x, gL.y, gR.x - gL.x, h - gL.y);
+
+    // Graduation ticks along ground
+    ctx.strokeStyle = "#a9c4cf";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    const tickStep = state.mode === "classroom" ? 50 : 5;
+    for (let wx = 0; wx <= b.worldXMax; wx += tickStep) {
+      const p = worldToScreen(wx, 0, b);
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x, p.y + 6);
+    }
+    ctx.stroke();
   }
 
-  // Draw Mode 1: Feed the Monkey Scene
   function drawMonkeyScene(b) {
     const m = state.monkey;
-
-    // 1. Tree trunk and branch
     const treeX = worldToScreen(m.xm, 0, b).x;
     const treeBase = worldToScreen(m.xm, 0, b).y;
     const branchTop = worldToScreen(m.xm, m.ym, b).y;
 
     // Tree Trunk
-    ctx.fillStyle = "#8a5832";
-    ctx.fillRect(treeX - 8, branchTop - 10, 16, treeBase - branchTop + 10);
+    ctx.fillStyle = "#7a4e2d";
+    ctx.fillRect(treeX - 10, branchTop - 12, 20, treeBase - branchTop + 12);
 
-    // Tree Branch
-    ctx.fillStyle = "#6d4424";
+    // Branch
+    ctx.fillStyle = "#5a3820";
     ctx.beginPath();
-    ctx.roundRect(treeX - 35, branchTop - 12, 50, 12, 4);
+    ctx.roundRect(treeX - 45, branchTop - 14, 65, 14, 4);
     ctx.fill();
 
     // Foliage
-    ctx.fillStyle = "#3d8b5c";
+    ctx.fillStyle = "#2e7d32";
     ctx.beginPath();
-    ctx.arc(treeX + 10, branchTop - 28, 32, 0, Math.PI * 2);
-    ctx.arc(treeX - 15, branchTop - 34, 26, 0, Math.PI * 2);
-    ctx.arc(treeX + 30, branchTop - 20, 22, 0, Math.PI * 2);
+    ctx.arc(treeX + 10, branchTop - 32, 36, 0, Math.PI * 2);
+    ctx.arc(treeX - 20, branchTop - 40, 28, 0, Math.PI * 2);
+    ctx.arc(treeX + 35, branchTop - 24, 26, 0, Math.PI * 2);
     ctx.fill();
 
-    // 2. Monkey
+    // Monkey
     const monkPt = worldToScreen(m.xm, m.monkeyY, b);
-    drawMonkeyGraphic(monkPt.x - 12, monkPt.y, m.isCaught);
+    drawMonkeySprite(monkPt.x - 14, monkPt.y, m.isCaught);
 
-    // Initial branch marker
+    // Initial branch reference marker
     if (state.simTime > 0) {
       ctx.strokeStyle = "rgba(18, 49, 64, 0.25)";
       ctx.setLineDash([4, 4]);
       ctx.beginPath();
-      ctx.moveTo(treeX - 30, branchTop);
-      ctx.lineTo(treeX + 30, branchTop);
+      ctx.moveTo(treeX - 40, branchTop);
+      ctx.lineTo(treeX + 40, branchTop);
       ctx.stroke();
       ctx.setLineDash([]);
     }
 
-    // 3. Cannon Muzzle & Mount
+    // Cannon
     const canPt = worldToScreen(m.x0, m.y0, b);
-    drawCannonGraphic(canPt.x, canPt.y, m.thetaDeg);
+    drawCannonSprite(canPt.x, canPt.y, m.thetaDeg);
 
-    // 4. Line of Sight Ray
+    // Line of Sight
     if (state.showTargetLine) {
       const aimPt = worldToScreen(m.xm, m.ym, b);
-      ctx.strokeStyle = "rgba(214, 123, 25, 0.75)";
+      ctx.strokeStyle = "#d67b19";
       ctx.lineWidth = 1.8;
-      ctx.setLineDash([6, 6]);
+      ctx.setLineDash([6, 5]);
       ctx.beginPath();
       ctx.moveTo(canPt.x, canPt.y);
       ctx.lineTo(aimPt.x, aimPt.y);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Target crosshair at monkey initial branch
+      // Target reticle
       ctx.strokeStyle = "#d67b19";
       ctx.lineWidth = 1.5;
       ctx.beginPath();
@@ -958,56 +1124,52 @@
     }
   }
 
-  function drawMonkeyGraphic(x, y, isCaught) {
+  function drawMonkeySprite(x, y, isCaught) {
     ctx.save();
     ctx.translate(x, y);
 
     // Body
     ctx.fillStyle = "#7a4e2d";
     ctx.beginPath();
-    ctx.ellipse(0, 0, 12, 16, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, 14, 18, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Belly
     ctx.fillStyle = "#b88a65";
     ctx.beginPath();
-    ctx.ellipse(0, 3, 7, 10, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 3, 8, 11, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Head
     ctx.fillStyle = "#7a4e2d";
     ctx.beginPath();
-    ctx.arc(0, -16, 11, 0, Math.PI * 2);
+    ctx.arc(0, -18, 12, 0, Math.PI * 2);
     ctx.fill();
 
     // Ears
     ctx.beginPath();
-    ctx.arc(-11, -17, 5, 0, Math.PI * 2);
-    ctx.arc(11, -17, 5, 0, Math.PI * 2);
+    ctx.arc(-12, -19, 5, 0, Math.PI * 2);
+    ctx.arc(12, -19, 5, 0, Math.PI * 2);
     ctx.fill();
 
     // Face
     ctx.fillStyle = "#b88a65";
     ctx.beginPath();
-    ctx.ellipse(0, -14, 8, 6, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -16, 9, 7, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Eyes
     ctx.fillStyle = "#123140";
     ctx.beginPath();
-    ctx.arc(-3, -16, 1.8, 0, Math.PI * 2);
-    ctx.arc(3, -16, 1.8, 0, Math.PI * 2);
+    ctx.arc(-3, -18, 2, 0, Math.PI * 2);
+    ctx.arc(3, -18, 2, 0, Math.PI * 2);
     ctx.fill();
 
-    // Smile / Catch mouth
+    // Mouth
     ctx.strokeStyle = "#123140";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    if (isCaught) {
-      ctx.arc(0, -12, 4, 0, Math.PI); // Big smile
-    } else {
-      ctx.arc(0, -12, 3, 0, Math.PI);
-    }
+    ctx.arc(0, -14, isCaught ? 5 : 3.5, 0, Math.PI);
     ctx.stroke();
 
     // Arms
@@ -1016,178 +1178,164 @@
     ctx.lineCap = "round";
     ctx.beginPath();
     if (isCaught) {
-      // Arms hugging banana
-      ctx.moveTo(-10, -5);
+      ctx.moveTo(-11, -5);
       ctx.lineTo(-2, 4);
-      ctx.moveTo(10, -5);
+      ctx.moveTo(11, -5);
       ctx.lineTo(2, 4);
     } else {
-      // Reaching arms
-      ctx.moveTo(-10, -5);
-      ctx.lineTo(-14, -18);
-      ctx.moveTo(10, -5);
-      ctx.lineTo(14, -18);
+      ctx.moveTo(-11, -5);
+      ctx.lineTo(-16, -20);
+      ctx.moveTo(11, -5);
+      ctx.lineTo(16, -20);
     }
     ctx.stroke();
 
     if (isCaught) {
-      // Banana in hands
-      ctx.fillStyle = "#e09f19";
+      // Banana
+      ctx.fillStyle = "#d67b19";
       ctx.beginPath();
-      ctx.arc(0, 5, 8, 0.4, 2.7);
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = "#e09f19";
+      ctx.arc(0, 6, 9, 0.4, 2.7);
+      ctx.lineWidth = 4.5;
+      ctx.strokeStyle = "#d67b19";
       ctx.stroke();
     }
 
     ctx.restore();
   }
 
-  function drawCannonGraphic(x, y, angleDeg) {
+  function drawCannonSprite(x, y, angleDeg) {
     ctx.save();
     ctx.translate(x, y);
 
-    // Base pedestal
+    // Pedestal
     ctx.fillStyle = "#0f7e9b";
     ctx.beginPath();
-    ctx.arc(0, 0, 14, Math.PI, 0);
+    ctx.arc(0, 0, 16, Math.PI, 0);
     ctx.fill();
 
     // Barrel
     ctx.rotate(-angleDeg * (Math.PI / 180));
-    ctx.fillStyle = "#095468";
+    ctx.fillStyle = "#095f76";
     ctx.beginPath();
-    ctx.roundRect(-6, -8, 38, 16, [0, 4, 4, 0]);
+    ctx.roundRect(-6, -9, 42, 18, [0, 5, 5, 0]);
     ctx.fill();
 
-    // Barrel ring
+    // Amber muzzle ring
     ctx.strokeStyle = "#d67b19";
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(30, -8);
-    ctx.lineTo(30, 8);
+    ctx.moveTo(33, -9);
+    ctx.lineTo(33, 9);
     ctx.stroke();
 
     ctx.restore();
 
-    // Pivot center dot
     ctx.fillStyle = "#d67b19";
     ctx.beginPath();
-    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.arc(x, y, 4.5, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // Draw Mode 2: Mark Rober Workshop Scene
   function drawMarkRoberScene(b) {
     const mr = state.markRober;
 
-    // 1. Workshop Ceiling
+    // Workshop Ceiling
     const cL = worldToScreen(b.worldXMin, mr.ceilingY, b);
     const cR = worldToScreen(b.worldXMax, mr.ceilingY, b);
-    ctx.strokeStyle = "#426170";
+    ctx.strokeStyle = "#4b6570";
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(cL.x, cL.y);
     ctx.lineTo(cR.x, cR.y);
     ctx.stroke();
 
-    // Ceiling hatch pattern / rafters
-    ctx.fillStyle = "#c8dbe3";
+    ctx.fillStyle = "#e2eef3";
     ctx.fillRect(cL.x, 0, cR.x - cL.x, cL.y);
     ctx.fillStyle = "#123140";
     ctx.font = "bold 11px Inter, sans-serif";
     ctx.fillText(`WORKSHOP CEILING (${mr.ceilingY.toFixed(1)}m)`, cL.x + 20, cL.y - 8);
 
-    // 2. Mark Rober figure standing at (x0, 0) throwing from y0
+    // Mark Rober Figure
     const markBase = worldToScreen(mr.x0, 0, b);
     const markHand = worldToScreen(mr.x0, mr.y0, b);
-    drawMarkRoberGraphic(markBase.x, markBase.y, markHand.y);
+    drawMarkRoberFigure(markBase.x, markBase.y, markHand.y);
 
-    // 3. Vertical Linear Actuator Track
+    // Vertical Linear Actuator Track
     const trackX = worldToScreen(mr.xBoard, 0, b).x;
     const trackBottom = worldToScreen(mr.xBoard, 0, b).y;
     const trackTop = worldToScreen(mr.xBoard, mr.ceilingY, b).y;
 
-    // Dual vertical guide rails
-    ctx.fillStyle = "#a2b9c4";
-    ctx.fillRect(trackX - 6, trackTop, 3, trackBottom - trackTop);
-    ctx.fillRect(trackX + 3, trackTop, 3, trackBottom - trackTop);
+    ctx.fillStyle = "#a9c4cf";
+    ctx.fillRect(trackX - 6, trackTop, 4, trackBottom - trackTop);
+    ctx.fillRect(trackX + 2, trackTop, 4, trackBottom - trackTop);
 
-    // 4. Sliding Motorized Dartboard
+    // Sliding Motorized Dartboard
     const boardPt = worldToScreen(mr.xBoard, mr.boardY, b);
-    drawDartboardGraphic(boardPt.x, boardPt.y);
+    drawDartboard(boardPt.x, boardPt.y);
   }
 
-  function drawMarkRoberGraphic(baseX, baseY, handY) {
+  function drawMarkRoberFigure(baseX, baseY, handY) {
     ctx.save();
-    // Body & legs
     ctx.strokeStyle = "#0f7e9b";
     ctx.lineWidth = 4;
     ctx.beginPath();
-    // Torso
-    ctx.moveTo(baseX, baseY - 10);
+    ctx.moveTo(baseX, baseY - 12);
     ctx.lineTo(baseX, handY + 12);
-    // Legs
-    ctx.moveTo(baseX, baseY - 10);
+    ctx.moveTo(baseX, baseY - 12);
     ctx.lineTo(baseX - 8, baseY);
-    ctx.moveTo(baseX, baseY - 10);
+    ctx.moveTo(baseX, baseY - 12);
     ctx.lineTo(baseX + 6, baseY);
     ctx.stroke();
 
-    // Throwing Arm
     ctx.strokeStyle = "#d67b19";
     ctx.lineWidth = 3.5;
     ctx.beginPath();
     ctx.moveTo(baseX, handY + 14);
-    ctx.lineTo(baseX + 12, handY);
+    ctx.lineTo(baseX + 14, handY);
     ctx.stroke();
 
-    // Head
     ctx.fillStyle = "#d67b19";
     ctx.beginPath();
-    ctx.arc(baseX, handY - 6, 8, 0, Math.PI * 2);
+    ctx.arc(baseX, handY - 6, 9, 0, Math.PI * 2);
     ctx.fill();
-
     ctx.restore();
   }
 
-  function drawDartboardGraphic(x, y) {
+  function drawDartboard(x, y) {
     ctx.save();
     ctx.translate(x, y);
 
-    // Motorized carriage backplate
+    // Carriage backplate
     ctx.fillStyle = "#123140";
-    ctx.fillRect(-12, -24, 8, 48);
+    ctx.fillRect(-14, -26, 10, 52);
 
-    // Dartboard outer rim
+    // Outer board rim
     ctx.fillStyle = "#123140";
     ctx.beginPath();
-    ctx.arc(0, 0, 20, 0, Math.PI * 2);
+    ctx.arc(0, 0, 22, 0, Math.PI * 2);
     ctx.fill();
 
-    // Segments
-    ctx.fillStyle = "#e4f3f7";
+    // Double ring
+    ctx.fillStyle = "#e6f4f8";
     ctx.beginPath();
-    ctx.arc(0, 0, 16, 0, Math.PI * 2);
+    ctx.arc(0, 0, 18, 0, Math.PI * 2);
     ctx.fill();
 
-    // Double/triple rings
     ctx.strokeStyle = "#0f7e9b";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.arc(0, 0, 12, 0, Math.PI * 2);
+    ctx.arc(0, 0, 13, 0, Math.PI * 2);
     ctx.stroke();
 
     // Bullseye
     ctx.fillStyle = "#d67b19";
     ctx.beginPath();
-    ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+    ctx.arc(0, 0, 5, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
   }
 
-  // Draw Mode 3: Classroom Notes Scene (Cliff & Obstacle Building)
   function drawClassroomScene(b) {
     const cp = state.classroom;
 
@@ -1196,7 +1344,7 @@
     const cliffBase = worldToScreen(cp.x0, 0, b);
     const screenLeft = worldToScreen(b.worldXMin, 0, b).x;
 
-    ctx.fillStyle = "#c8dbe3";
+    ctx.fillStyle = "#e2eef3";
     ctx.fillRect(screenLeft, cliffEdge.y, cliffEdge.x - screenLeft + 8, cliffBase.y - cliffEdge.y);
     ctx.strokeStyle = "#0f7e9b";
     ctx.lineWidth = 3;
@@ -1206,24 +1354,23 @@
     ctx.lineTo(cliffEdge.x, cliffBase.y);
     ctx.stroke();
 
-    // Cliff height label
     ctx.fillStyle = "#0f7e9b";
-    ctx.font = "bold 12px Inter, sans-serif";
-    ctx.fillText(`CLIFF h₀ = ${cp.y0}m`, cliffEdge.x - 95, cliffEdge.y - 12);
+    ctx.font = "bold 12px 'IBM Plex Sans', sans-serif";
+    ctx.fillText(`CLIFF h₀ = ${cp.y0}m`, cliffEdge.x - 105, cliffEdge.y - 12);
 
-    // 2. Obstacle Building [x1, x2] of height bldgHeight
+    // 2. Obstacle Building
     const bldgL = worldToScreen(cp.x1, cp.bldgHeight, b);
     const bldgR = worldToScreen(cp.x2, 0, b);
     const bldgW = bldgR.x - bldgL.x;
     const bldgH = bldgR.y - bldgL.y;
 
-    ctx.fillStyle = "#e4f3f7";
+    ctx.fillStyle = "#f0f8fa";
     ctx.fillRect(bldgL.x, bldgL.y, bldgW, bldgH);
     ctx.strokeStyle = "#0f7e9b";
     ctx.lineWidth = 2.5;
     ctx.strokeRect(bldgL.x, bldgL.y, bldgW, bldgH);
 
-    // Building windows
+    // Windows
     ctx.fillStyle = "#0f7e9b";
     const winW = 6, winH = 8, gapX = 14, gapY = 16;
     for (let wx = bldgL.x + 10; wx < bldgL.x + bldgW - 8; wx += gapX) {
@@ -1232,41 +1379,36 @@
       }
     }
 
-    // Building Roof Label
     ctx.fillStyle = "#123140";
     ctx.font = "bold 11px Inter, sans-serif";
-    ctx.fillText(`BUILDING (${cp.bldgHeight}m)`, bldgL.x + 4, bldgL.y - 8);
+    ctx.fillText(`BUILDING (${cp.bldgHeight}m)`, bldgL.x + 6, bldgL.y - 8);
 
-    // 3. Launcher atop cliff
-    drawCannonGraphic(cliffEdge.x, cliffEdge.y, cp.thetaDeg);
+    // Launcher
+    drawCannonSprite(cliffEdge.x, cliffEdge.y, cp.thetaDeg);
   }
 
-  // Draw Mode 4: Free Sandbox Scene
   function drawSandboxScene(b) {
     const sb = state.sandbox;
     const canPt = worldToScreen(sb.x0, sb.y0, b);
 
-    // Platform
     if (sb.y0 > 0) {
       const gPt = worldToScreen(sb.x0, 0, b);
-      ctx.fillStyle = "#e4f3f7";
+      ctx.fillStyle = "#e6f4f8";
       ctx.fillRect(canPt.x - 20, canPt.y, 40, gPt.y - canPt.y);
       ctx.strokeStyle = "#0f7e9b";
       ctx.lineWidth = 2;
       ctx.strokeRect(canPt.x - 20, canPt.y, 40, gPt.y - canPt.y);
     }
 
-    drawCannonGraphic(canPt.x, canPt.y, sb.thetaDeg);
+    drawCannonSprite(canPt.x, canPt.y, sb.thetaDeg);
   }
 
-  // Trajectories & Strobe Dots
   function drawTrajectories(b) {
     if (!currentTrajectory || currentTrajectory.length < 2) return;
 
-    // 1. Zero-G Ghost Trajectory
     if (state.showZeroG && currentZeroGTrajectory.length > 1) {
       ctx.strokeStyle = "rgba(18, 49, 64, 0.25)";
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 2;
       ctx.setLineDash([4, 6]);
       ctx.beginPath();
       for (let i = 0; i < currentZeroGTrajectory.length; i++) {
@@ -1278,9 +1420,8 @@
       ctx.setLineDash([]);
     }
 
-    // 2. Real Gravity Trajectory
-    ctx.strokeStyle = "rgba(15, 126, 155, 0.85)";
-    ctx.lineWidth = 2.4;
+    ctx.strokeStyle = "rgba(15, 126, 155, 0.88)";
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
     for (let i = 0; i < currentTrajectory.length; i++) {
       const pt = worldToScreen(currentTrajectory[i].x, currentTrajectory[i].y, b);
@@ -1289,19 +1430,16 @@
     }
     ctx.stroke();
 
-    // 3. Strobe Dots (at Delta t = 0.1s)
     if (state.showStrobes && currentStrobes.length > 0) {
       for (let i = 0; i < currentStrobes.length; i++) {
         const st = currentStrobes[i];
         const sPt = worldToScreen(st.x, st.y, b);
 
-        // Dot
         ctx.fillStyle = "#d67b19";
         ctx.beginPath();
-        ctx.arc(sPt.x, sPt.y, 3.5, 0, Math.PI * 2);
+        ctx.arc(sPt.x, sPt.y, 4, 0, Math.PI * 2);
         ctx.fill();
 
-        // Feed the Monkey: show matching free-fall dot for monkey!
         if (state.mode === "monkey") {
           const m = state.monkey;
           const drop = 0.5 * m.g * st.t * st.t;
@@ -1310,14 +1448,13 @@
 
           ctx.fillStyle = "#0f7e9b";
           ctx.beginPath();
-          ctx.arc(mPt.x, mPt.y, 3.5, 0, Math.PI * 2);
+          ctx.arc(mPt.x, mPt.y, 4, 0, Math.PI * 2);
           ctx.fill();
 
-          // Connective equal-height horizontal drop indicator line
           if (i % 2 === 0 && st.t <= m.hitResult.tIntercept) {
-            ctx.strokeStyle = "rgba(214, 123, 25, 0.18)";
-            ctx.lineWidth = 1;
-            ctx.setLineDash([2, 4]);
+            ctx.strokeStyle = "rgba(214, 123, 25, 0.2)";
+            ctx.lineWidth = 1.2;
+            ctx.setLineDash([3, 4]);
             ctx.beginPath();
             ctx.moveTo(sPt.x, sPt.y);
             ctx.lineTo(mPt.x, mPt.y);
@@ -1329,7 +1466,6 @@
     }
   }
 
-  // Active Projectile & Vectors Overlay
   function drawProjectileAndVectors(b) {
     let p = { x: 0, y: 0 };
     let v0 = 20, thetaDeg = 45, g = 9.80;
@@ -1358,46 +1494,40 @@
 
     const scrPt = worldToScreen(p.x, p.y, b);
 
-    // Draw projectile body
     if (state.mode === "monkey") {
-      // Banana projectile
       ctx.save();
       ctx.translate(scrPt.x, scrPt.y);
       ctx.rotate(state.simTime * 8);
       ctx.fillStyle = "#d67b19";
       ctx.beginPath();
-      ctx.arc(0, 0, 7, 0, Math.PI * 2);
+      ctx.arc(0, 0, 8, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     } else if (state.mode === "mark-rober") {
-      // Dart projectile
       ctx.save();
       ctx.translate(scrPt.x, scrPt.y);
       const decomp = ProjectilesPhysics.decomposeVelocity(v0, thetaDeg);
       const vel = ProjectilesPhysics.getVelocityAtTime({ vx: decomp.vx, vy: decomp.vy, g: g, t: state.simTime });
       ctx.rotate(-vel.angleDeg * (Math.PI / 180));
       ctx.fillStyle = "#123140";
-      ctx.fillRect(-12, -2, 24, 4);
-      // Fins
+      ctx.fillRect(-13, -2.5, 26, 5);
       ctx.fillStyle = "#d67b19";
       ctx.beginPath();
-      ctx.moveTo(-12, -6);
-      ctx.lineTo(-6, 0);
-      ctx.lineTo(-12, 6);
+      ctx.moveTo(-13, -7);
+      ctx.lineTo(-7, 0);
+      ctx.lineTo(-13, 7);
       ctx.fill();
       ctx.restore();
     } else {
-      // Ball projectile
       ctx.fillStyle = "#d67b19";
       ctx.beginPath();
-      ctx.arc(scrPt.x, scrPt.y, 6, 0, Math.PI * 2);
+      ctx.arc(scrPt.x, scrPt.y, 7, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 1.5;
       ctx.stroke();
     }
 
-    // Velocity Vectors
     if (state.showVectors && state.isRunning) {
       const decomp = ProjectilesPhysics.decomposeVelocity(v0, thetaDeg);
       const vel = ProjectilesPhysics.getVelocityAtTime({
@@ -1407,16 +1537,10 @@
         t: state.simTime
       });
 
-      const vScale = state.mode === "classroom" ? 0.8 : 2.5;
-
-      // vx vector (horizontal, teal)
+      const vScale = state.mode === "classroom" ? 0.75 : 2.4;
       drawArrow(ctx, scrPt.x, scrPt.y, scrPt.x + vel.vx * vScale, scrPt.y, "#0f7e9b", 2);
-
-      // vy vector (vertical, amber)
       drawArrow(ctx, scrPt.x, scrPt.y, scrPt.x, scrPt.y - vel.vy * vScale, "#d67b19", 2);
-
-      // Total v vector (hypotenuse, dark teal)
-      drawArrow(ctx, scrPt.x, scrPt.y, scrPt.x + vel.vx * vScale, scrPt.y - vel.vy * vScale, "#095468", 2.5);
+      drawArrow(ctx, scrPt.x, scrPt.y, scrPt.x + vel.vx * vScale, scrPt.y - vel.vy * vScale, "#095f76", 2.5);
     }
   }
 
@@ -1445,10 +1569,195 @@
   }
 
   // ==========================================================================
+  // Presets Bar Population per Mode
+  // ==========================================================================
+
+  function updatePresetBar() {
+    if (!presetPillsContainer) return;
+    presetPillsContainer.innerHTML = "";
+
+    if (state.mode === "monkey") {
+      btnQuickModeAction.innerHTML = "<span>🎯</span> Auto-Aim Directly";
+      btnQuickModeAction.style.display = "inline-flex";
+
+      addPresetPill("Gizmo Classic (26 m/s)", true, () => {
+        state.monkey.v0 = 26.0;
+        state.monkey.xm = 25.0;
+        state.monkey.ym = 16.0;
+        state.monkey.thetaDeg = 32.6;
+        syncSliders();
+        resetSimulation();
+      });
+
+      addPresetPill("Slow Feed (18 m/s)", false, () => {
+        state.monkey.v0 = 18.0;
+        state.monkey.xm = 25.0;
+        state.monkey.ym = 16.0;
+        state.monkey.thetaDeg = 32.6;
+        syncSliders();
+        resetSimulation();
+      });
+
+      addPresetPill("High Fast Feed (40 m/s)", false, () => {
+        state.monkey.v0 = 40.0;
+        state.monkey.xm = 25.0;
+        state.monkey.ym = 16.0;
+        state.monkey.thetaDeg = 32.6;
+        syncSliders();
+        resetSimulation();
+      });
+
+      addPresetPill("Zero-Gravity (g = 0)", false, () => {
+        state.monkey.g = 0;
+        document.getElementById("simGravity").value = "0.00";
+        state.showZeroG = true;
+        toggleZeroG.classList.add("active");
+        syncSliders();
+        resetSimulation();
+      });
+
+    } else if (state.mode === "mark-rober") {
+      btnQuickModeAction.innerHTML = "<span>📐</span> Load Worksheet Setup";
+      btnQuickModeAction.style.display = "inline-flex";
+
+      addPresetPill("Worksheet Default (15 m/s, 40°)", true, () => {
+        state.markRober.v0 = 15.0;
+        state.markRober.alphaDeg = 40.0;
+        state.markRober.xBoard = 5.0;
+        state.markRober.ceilingY = 7.0;
+        state.markRober.g = 10.0;
+        syncSliders();
+        resetSimulation();
+      });
+
+      addPresetPill("Low Ceiling Test (5.5m)", false, () => {
+        state.markRober.v0 = 15.0;
+        state.markRober.alphaDeg = 40.0;
+        state.markRober.xBoard = 5.0;
+        state.markRober.ceilingY = 5.5;
+        state.markRober.g = 10.0;
+        syncSliders();
+        resetSimulation();
+      });
+
+      addPresetPill("Long Throw (10m Board)", false, () => {
+        state.markRober.v0 = 20.0;
+        state.markRober.alphaDeg = 45.0;
+        state.markRober.xBoard = 10.0;
+        state.markRober.ceilingY = 8.5;
+        state.markRober.g = 10.0;
+        syncSliders();
+        resetSimulation();
+      });
+
+    } else if (state.mode === "classroom") {
+      btnQuickModeAction.innerHTML = "<span>🏔️</span> Notes: Cliff & Building";
+      btnQuickModeAction.style.display = "inline-flex";
+
+      addPresetPill("Cliff & 70m Building (p. 7-8, 13-14)", true, () => {
+        state.classroom.y0 = 320;
+        state.classroom.v0 = 42.0;
+        state.classroom.thetaDeg = 30.0;
+        state.classroom.x1 = 230;
+        state.classroom.x2 = 310;
+        state.classroom.bldgHeight = 70;
+        state.classroom.g = 10.0;
+        syncSliders();
+        resetSimulation();
+      });
+
+      addPresetPill("Shark Pool Launch (p. 5, 11)", false, () => {
+        state.classroom.y0 = 0.9;
+        state.classroom.v0 = 42.7;
+        state.classroom.thetaDeg = 0.0;
+        state.classroom.x1 = 18.0;
+        state.classroom.x2 = 19.0;
+        state.classroom.bldgHeight = 0.2;
+        state.classroom.g = 9.8;
+        syncSliders();
+        resetSimulation();
+      });
+
+    } else {
+      btnQuickModeAction.style.display = "none";
+      addPresetPill("45° Maximum Range", true, () => {
+        state.sandbox.v0 = 25.0;
+        state.sandbox.thetaDeg = 45.0;
+        state.sandbox.y0 = 0;
+        syncSliders();
+        resetSimulation();
+      });
+      addPresetPill("Elevated Launch (15m, 30°)", false, () => {
+        state.sandbox.v0 = 25.0;
+        state.sandbox.thetaDeg = 30.0;
+        state.sandbox.y0 = 15.0;
+        syncSliders();
+        resetSimulation();
+      });
+    }
+  }
+
+  function addPresetPill(text, isActive, onClick) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `preset-pill ${isActive ? 'active' : ''}`;
+    btn.textContent = text;
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".preset-pill").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      onClick();
+    });
+    presetPillsContainer.appendChild(btn);
+  }
+
+  function syncSliders() {
+    if (state.mode === "monkey") {
+      const m = state.monkey;
+      document.getElementById("monkeyV0").value = m.v0;
+      document.getElementById("monkeyV0Val").textContent = m.v0.toFixed(1) + " m/s";
+      document.getElementById("monkeyAngle").value = m.thetaDeg;
+      document.getElementById("monkeyAngleVal").textContent = m.thetaDeg.toFixed(1) + "°";
+      document.getElementById("monkeyDist").value = m.xm;
+      document.getElementById("monkeyDistVal").textContent = m.xm.toFixed(1) + " m";
+      document.getElementById("monkeyHeight").value = m.ym;
+      document.getElementById("monkeyHeightVal").textContent = m.ym.toFixed(1) + " m";
+      document.getElementById("cannonHeight").value = m.y0;
+      document.getElementById("cannonHeightVal").textContent = m.y0.toFixed(1) + " m";
+    } else if (state.mode === "mark-rober") {
+      const mr = state.markRober;
+      document.getElementById("roberV0").value = mr.v0;
+      document.getElementById("roberV0Val").textContent = mr.v0.toFixed(1) + " m/s";
+      document.getElementById("roberAngle").value = mr.alphaDeg;
+      document.getElementById("roberAngleVal").textContent = mr.alphaDeg.toFixed(1) + "°";
+      document.getElementById("roberBoardX").value = mr.xBoard;
+      document.getElementById("roberBoardXVal").textContent = mr.xBoard.toFixed(1) + " m";
+      document.getElementById("roberCeiling").value = mr.ceilingY;
+      document.getElementById("roberCeilingVal").textContent = mr.ceilingY.toFixed(1) + " m";
+      document.getElementById("roberReleaseY").value = mr.y0;
+      document.getElementById("roberReleaseYVal").textContent = mr.y0.toFixed(1) + " m";
+      document.getElementById("roberGravity").value = mr.g.toFixed(2);
+    } else if (state.mode === "classroom") {
+      const cp = state.classroom;
+      document.getElementById("classV0").value = cp.v0;
+      document.getElementById("classV0Val").textContent = cp.v0.toFixed(1) + " m/s";
+      document.getElementById("classAngle").value = cp.thetaDeg;
+      document.getElementById("classAngleVal").textContent = cp.thetaDeg.toFixed(1) + "°";
+      document.getElementById("classCliffH").value = cp.y0;
+      document.getElementById("classCliffHVal").textContent = cp.y0.toFixed(0) + " m";
+      document.getElementById("classBldgH").value = cp.bldgHeight;
+      document.getElementById("classBldgHVal").textContent = cp.bldgHeight.toFixed(0) + " m";
+      document.getElementById("classBldgX1").value = cp.x1;
+      document.getElementById("classBldgX1Val").textContent = cp.x1.toFixed(0) + " m";
+      document.getElementById("classBldgW").value = cp.x2 - cp.x1;
+      document.getElementById("classBldgWVal").textContent = (cp.x2 - cp.x1).toFixed(0) + " m";
+    }
+  }
+
+  // ==========================================================================
   // Mouse & Touch Interactivity (Canvas Dragging)
   // ==========================================================================
 
-  function setupCanvasDragInteraction() {
+  function setupCanvasDrag() {
     let activeDrag = null;
 
     canvas.addEventListener("mousedown", onPointerDown);
@@ -1478,13 +1787,11 @@
 
       if (state.mode === "monkey") {
         const m = state.monkey;
-        // Check monkey click
         if (Math.hypot(world.x - m.xm, world.y - m.ym) < 2.5) {
           activeDrag = "monkeyTarget";
           canvas.style.cursor = "grabbing";
           return;
         }
-        // Check cannon muzzle / aim click
         if (Math.hypot(world.x - m.x0, world.y - m.y0) < 3.0) {
           activeDrag = "cannonAngle";
           canvas.style.cursor = "grabbing";
@@ -1492,13 +1799,11 @@
         }
       } else if (state.mode === "mark-rober") {
         const mr = state.markRober;
-        // Check dartboard click
         if (Math.hypot(world.x - mr.xBoard, world.y - mr.boardY) < 2.0) {
           activeDrag = "dartboard";
           canvas.style.cursor = "grabbing";
           return;
         }
-        // Check throw angle click
         if (Math.hypot(world.x - mr.x0, world.y - mr.y0) < 2.5) {
           activeDrag = "roberAngle";
           canvas.style.cursor = "grabbing";
@@ -1515,7 +1820,6 @@
       const world = screenToWorld(sx, sy, bounds);
 
       if (!activeDrag) {
-        // Hover cursor styling
         if (state.mode === "monkey") {
           const m = state.monkey;
           if (Math.hypot(world.x - m.xm, world.y - m.ym) < 2.5 || Math.hypot(world.x - m.x0, world.y - m.y0) < 3.0) {
@@ -1532,10 +1836,7 @@
         const newY = Math.max(6, Math.min(25, Number(world.y.toFixed(1))));
         state.monkey.xm = newX;
         state.monkey.ym = newY;
-        document.getElementById("monkeyDist").value = newX;
-        document.getElementById("monkeyDistVal").textContent = newX.toFixed(1) + " m";
-        document.getElementById("monkeyHeight").value = newY;
-        document.getElementById("monkeyHeightVal").textContent = newY.toFixed(1) + " m";
+        syncSliders();
         resetSimulation();
       } else if (activeDrag === "cannonAngle") {
         const dx = world.x - state.monkey.x0;
@@ -1543,14 +1844,12 @@
         let deg = Math.atan2(dy, dx) * (180 / Math.PI);
         deg = Math.max(-10, Math.min(75, Number(deg.toFixed(1))));
         state.monkey.thetaDeg = deg;
-        document.getElementById("monkeyAngle").value = deg;
-        document.getElementById("monkeyAngleVal").textContent = deg.toFixed(1) + "°";
+        syncSliders();
         resetSimulation();
       } else if (activeDrag === "dartboard") {
         const newX = Math.max(3, Math.min(15, Number(world.x.toFixed(1))));
         state.markRober.xBoard = newX;
-        document.getElementById("roberBoardX").value = newX;
-        document.getElementById("roberBoardXVal").textContent = newX.toFixed(1) + " m";
+        syncSliders();
         resetSimulation();
       } else if (activeDrag === "roberAngle") {
         const dx = world.x - state.markRober.x0;
@@ -1558,8 +1857,7 @@
         let deg = Math.atan2(dy, dx) * (180 / Math.PI);
         deg = Math.max(10, Math.min(75, Number(deg.toFixed(1))));
         state.markRober.alphaDeg = deg;
-        document.getElementById("roberAngle").value = deg;
-        document.getElementById("roberAngleVal").textContent = deg.toFixed(1) + "°";
+        syncSliders();
         resetSimulation();
       }
     }
@@ -1573,16 +1871,15 @@
   }
 
   // ==========================================================================
-  // Trial Logger & CSV Export
+  // Trials Logger & CSV
   // ==========================================================================
 
-  function logTrial(mode, v0, theta, g, tHit, finalX, finalY, result) {
+  function logTrial(mode, v0, theta, tHit, finalX, finalY, result) {
     const trial = {
       id: state.trials.length + 1,
       mode: mode,
       v0: v0.toFixed(1),
       theta: theta.toFixed(1),
-      g: g.toFixed(2),
       tHit: tHit.toFixed(2),
       finalX: finalX.toFixed(1),
       finalY: finalY.toFixed(1),
@@ -1597,7 +1894,7 @@
     if (!tbody) return;
 
     if (state.trials.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="9">No recorded trials yet. Fire a projectile to log data!</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--subtle); padding:1rem;">No trials logged yet. Fire a projectile!</td></tr>';
       return;
     }
 
@@ -1607,26 +1904,24 @@
         <td>${t.mode}</td>
         <td>${t.v0}</td>
         <td>${t.theta}°</td>
-        <td>${t.g}</td>
         <td>${t.tHit}</td>
         <td>${t.finalX}</td>
         <td>${t.finalY}</td>
-        <td class="${t.result.includes('HIT') || t.result.includes('CAUGHT') || t.result.includes('CLEARED') ? 'badge-hit' : 'badge-miss'}">${t.result}</td>
+        <td style="font-weight:700; color:${t.result.includes('CAUGHT') || t.result.includes('BULLSEYE') || t.result.includes('CLEARED') ? 'var(--success)' : 'var(--error)'};">${t.result}</td>
       </tr>
     `).join("");
   }
 
   function exportCSV() {
     if (state.trials.length === 0) {
-      alert("No trial data to export yet. Please fire a few shots first!");
+      alert("No trial data to export yet. Please launch a projectile first!");
       return;
     }
-    const headers = ["Trial", "Mode", "v0 (m/s)", "Angle (deg)", "g (m/s2)", "Flight Time (s)", "Final x (m)", "Final y (m)", "Result"];
-    const rows = state.trials.map(t => [t.id, t.mode, t.v0, t.theta, t.g, t.tHit, t.finalX, t.finalY, `"${t.result}"`]);
+    const headers = ["Trial", "Mode", "v0 (m/s)", "Angle (deg)", "Flight Time (s)", "Final x (m)", "Final y (m)", "Result"];
+    const rows = state.trials.map(t => [t.id, t.mode, t.v0, t.theta, t.tHit, t.finalX, t.finalY, `"${t.result}"`]);
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", encodeURI(csvContent));
     link.setAttribute("download", "projectile_motion_trials.csv");
     document.body.appendChild(link);
     link.click();
@@ -1634,7 +1929,7 @@
   }
 
   // ==========================================================================
-  // Student Prediction Challenge
+  // Student Challenge
   // ==========================================================================
 
   function setupChallenge() {
@@ -1643,76 +1938,128 @@
     const btnNew = document.getElementById("btnNewChallenge");
 
     btnCheck.addEventListener("click", () => {
-      const selected = document.querySelector('input[name="monkeyPred"]:checked');
+      const selected = document.querySelector('input[name="predChoice"]:checked');
       if (!selected) return;
 
       if (selected.value === "direct") {
-        feedback.className = "challenge-feedback correct";
-        feedback.innerHTML = "<strong>✅ Correct!</strong> Because gravity accelerates both the projectile and the falling target downwards at identical rates ($a_y = -g$), both drop the exact same distance $\\frac{1}{2}gt^2$ from the line of sight. Aiming directly at the monkey guarantees a hit!";
+        feedback.style.display = "block";
+        feedback.style.background = "var(--success-bg)";
+        feedback.style.color = "var(--success)";
+        feedback.style.border = "1px solid var(--success-border)";
+        feedback.innerHTML = "<strong>✅ Correct!</strong> Because gravity accelerates both objects downward at the identical rate (<em>a</em><sub>y</sub> = &minus;<em>g</em>), both drop the exact same vertical distance (<span class=\"fraction\"><span class=\"num\">1</span><span class=\"den\">2</span></span><em>g</em><em>t</em>&sup2;) from the line of sight. Aiming directly at the monkey guarantees an intercept at any launch speed!";
       } else {
-        feedback.className = "challenge-feedback incorrect";
-        feedback.innerHTML = "<strong>❌ Incorrect:</strong> If you aim above or below, the projectile will miss. Because both start falling under gravity simultaneously, aiming directly at the monkey ensures their vertical drops cancel out!";
+        feedback.style.display = "block";
+        feedback.style.background = "var(--error-bg)";
+        feedback.style.color = "var(--error)";
+        feedback.style.border = "1px solid var(--error-border)";
+        feedback.innerHTML = "<strong>❌ Incorrect:</strong> Because gravity begins pulling both objects downward the moment the cannon fires, aiming directly along the line of sight causes the two vertical drops to cancel out!";
       }
     });
 
     btnNew.addEventListener("click", () => {
-      feedback.className = "challenge-feedback";
       feedback.style.display = "none";
-      const speeds = [18.0, 22.0, 26.0, 30.0, 35.0];
-      const randomSpeed = speeds[Math.floor(Math.random() * speeds.length)];
-      state.monkey.v0 = randomSpeed;
-      document.getElementById("monkeyV0").value = randomSpeed;
-      document.getElementById("monkeyV0Val").textContent = randomSpeed.toFixed(1) + " m/s";
-      document.getElementById("challengePrompt").textContent = `Can you hit the monkey when launch speed is set to ${randomSpeed.toFixed(1)} m/s? Predict where to aim:`;
+      const speeds = [18.0, 22.0, 26.0, 30.0, 35.0, 42.0];
+      const s = speeds[Math.floor(Math.random() * speeds.length)];
+      state.monkey.v0 = s;
+      syncSliders();
+      document.getElementById("challengePrompt").textContent = `If launch speed is set to ${s.toFixed(1)} m/s, where should you aim to feed the falling monkey?`;
       resetSimulation();
     });
   }
 
   // ==========================================================================
-  // Event Bindings & Initialization
+  // Initialization & Event Binding
   // ==========================================================================
 
-  function initUIBindings() {
+  function initUI() {
     // Mode Switcher
-    modeTabs.forEach(tab => {
-      tab.addEventListener("click", () => {
-        modeTabs.forEach(t => {
-          t.classList.remove("active");
-          t.setAttribute("aria-selected", "false");
+    modePillBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        modePillBtns.forEach(b => {
+          b.classList.remove("active");
+          b.setAttribute("aria-selected", "false");
         });
-        tab.classList.add("active");
-        tab.setAttribute("aria-selected", "true");
+        btn.classList.add("active");
+        btn.setAttribute("aria-selected", "true");
 
-        const targetMode = tab.dataset.mode;
-        state.mode = targetMode;
+        state.mode = btn.dataset.mode;
 
-        // Update mode panels
-        Object.keys(modePanels).forEach(mKey => {
-          if (mKey === targetMode) {
-            modePanels[mKey].classList.add("active");
+        // Switch control panels
+        Object.keys(modeControlPanels).forEach(k => {
+          if (k === state.mode) {
+            modeControlPanels[k].style.display = "block";
+            modeControlPanels[k].classList.add("active");
           } else {
-            modePanels[mKey].classList.remove("active");
+            modeControlPanels[k].style.display = "none";
+            modeControlPanels[k].classList.remove("active");
           }
         });
 
-        // Update Title & Badge
-        const titleMap = {
-          monkey: "Feed the Monkey Controls",
-          "mark-rober": "Mark Rober Dartboard Controls",
-          classroom: "Classroom Notes & Obstacle Controls",
-          sandbox: "Free Sandbox Controls"
-        };
-        const badgeMap = {
-          monkey: "Mode: Feed the Monkey",
-          "mark-rober": "Mode: Mark Rober Dartboard",
-          classroom: "Mode: Classroom Notes",
-          sandbox: "Mode: Free Sandbox"
-        };
-        document.getElementById("controlsTitle").textContent = titleMap[targetMode];
-        modeBadge.textContent = badgeMap[targetMode];
-
+        updatePresetBar();
         resetSimulation();
       });
+    });
+
+    // Subtabs in right column
+    tabPills.forEach(pill => {
+      pill.addEventListener("click", () => {
+        tabPills.forEach(p => p.classList.remove("active"));
+        pill.classList.add("active");
+
+        const target = pill.dataset.subtab;
+        Object.keys(subtabContents).forEach(k => {
+          if (k === target) {
+            subtabContents[k].style.display = "block";
+            subtabContents[k].classList.add("active");
+          } else {
+            subtabContents[k].style.display = "none";
+            subtabContents[k].classList.remove("active");
+          }
+        });
+      });
+    });
+
+    // Activity Guide Drawer Toggle
+    btnToggleGuide.addEventListener("click", () => {
+      const isOpen = activityGuide.classList.contains("open");
+      activityGuide.classList.toggle("open", !isOpen);
+      btnToggleGuide.setAttribute("aria-expanded", String(!isOpen));
+      btnToggleGuide.textContent = isOpen ? "📘 Guided Activities & How-To" : "✖ Hide Guide";
+    });
+
+    btnCloseGuide.addEventListener("click", () => {
+      activityGuide.classList.remove("open");
+      btnToggleGuide.setAttribute("aria-expanded", "false");
+      btnToggleGuide.textContent = "📘 Guided Activities & How-To";
+    });
+
+    // Quick Action button in controls bar
+    btnQuickModeAction.addEventListener("click", () => {
+      if (state.mode === "monkey") {
+        const m = state.monkey;
+        const directDeg = Math.atan2(m.ym - m.y0, m.xm - m.x0) * (180 / Math.PI);
+        m.thetaDeg = parseFloat(directDeg.toFixed(1));
+        syncSliders();
+        resetSimulation();
+      } else if (state.mode === "mark-rober") {
+        state.markRober.v0 = 15.0;
+        state.markRober.alphaDeg = 40.0;
+        state.markRober.xBoard = 5.0;
+        state.markRober.ceilingY = 7.0;
+        state.markRober.g = 10.0;
+        syncSliders();
+        resetSimulation();
+      } else if (state.mode === "classroom") {
+        state.classroom.y0 = 320;
+        state.classroom.v0 = 42.0;
+        state.classroom.thetaDeg = 30.0;
+        state.classroom.x1 = 230;
+        state.classroom.x2 = 310;
+        state.classroom.bldgHeight = 70;
+        state.classroom.g = 10.0;
+        syncSliders();
+        resetSimulation();
+      }
     });
 
     // Playback Buttons
@@ -1725,11 +2072,17 @@
     });
     btnStep.addEventListener("click", stepForward);
     btnReset.addEventListener("click", resetSimulation);
-    speedSelect.addEventListener("change", (e) => {
-      state.playbackSpeed = parseFloat(e.target.value);
+
+    // Speed Pills
+    speedPills.forEach(sp => {
+      sp.addEventListener("click", () => {
+        speedPills.forEach(p => p.classList.remove("active"));
+        sp.classList.add("active");
+        state.playbackSpeed = parseFloat(sp.dataset.speed);
+      });
     });
 
-    // Toggles
+    // Floating Toggles
     toggleTargetLine.addEventListener("click", () => {
       state.showTargetLine = !state.showTargetLine;
       toggleTargetLine.classList.toggle("active", state.showTargetLine);
@@ -1759,10 +2112,10 @@
     toggleAudio.addEventListener("click", () => {
       sfx.enabled = !sfx.enabled;
       toggleAudio.classList.toggle("active", sfx.enabled);
-      toggleAudio.textContent = sfx.enabled ? "🔊" : "🔇";
+      toggleAudio.textContent = sfx.enabled ? "🔊 Audio" : "🔇 Muted";
     });
 
-    // Feed the Monkey Sliders
+    // Sliders Event Binding
     const bindSlider = (id, valId, obj, key, unit, decimals = 1) => {
       const slider = document.getElementById(id);
       const display = document.getElementById(valId);
@@ -1781,58 +2134,22 @@
     bindSlider("monkeyHeight", "monkeyHeightVal", state.monkey, "ym", "m", 1);
     bindSlider("cannonHeight", "cannonHeightVal", state.monkey, "y0", "m", 1);
 
-    const simGravity = document.getElementById("simGravity");
-    simGravity.addEventListener("change", (e) => {
+    document.getElementById("simGravity").addEventListener("change", (e) => {
       state.monkey.g = parseFloat(e.target.value);
       resetSimulation();
     });
 
-    // Auto-Aim Monkey
-    document.getElementById("btnAutoAimMonkey").addEventListener("click", () => {
-      const m = state.monkey;
-      const directDeg = Math.atan2(m.ym - m.y0, m.xm - m.x0) * (180 / Math.PI);
-      m.thetaDeg = parseFloat(directDeg.toFixed(1));
-      document.getElementById("monkeyAngle").value = m.thetaDeg;
-      document.getElementById("monkeyAngleVal").textContent = m.thetaDeg.toFixed(1) + "°";
-      resetSimulation();
-    });
-
-    // Mark Rober Sliders
     bindSlider("roberV0", "roberV0Val", state.markRober, "v0", "m/s");
     bindSlider("roberAngle", "roberAngleVal", state.markRober, "alphaDeg", "°");
     bindSlider("roberBoardX", "roberBoardXVal", state.markRober, "xBoard", "m");
     bindSlider("roberCeiling", "roberCeilingVal", state.markRober, "ceilingY", "m");
     bindSlider("roberReleaseY", "roberReleaseYVal", state.markRober, "y0", "m");
 
-    const roberGravity = document.getElementById("roberGravity");
-    roberGravity.addEventListener("change", (e) => {
+    document.getElementById("roberGravity").addEventListener("change", (e) => {
       state.markRober.g = parseFloat(e.target.value);
       resetSimulation();
     });
 
-    document.getElementById("btnPresetMarkWorksheet").addEventListener("click", () => {
-      state.markRober.v0 = 15.0;
-      state.markRober.alphaDeg = 40.0;
-      state.markRober.xBoard = 5.0;
-      state.markRober.y0 = 1.8;
-      state.markRober.ceilingY = 7.0;
-      state.markRober.g = 10.0;
-
-      document.getElementById("roberV0").value = 15.0;
-      document.getElementById("roberV0Val").textContent = "15.0 m/s";
-      document.getElementById("roberAngle").value = 40.0;
-      document.getElementById("roberAngleVal").textContent = "40.0°";
-      document.getElementById("roberBoardX").value = 5.0;
-      document.getElementById("roberBoardXVal").textContent = "5.0 m";
-      document.getElementById("roberCeiling").value = 7.0;
-      document.getElementById("roberCeilingVal").textContent = "7.0 m";
-      document.getElementById("roberReleaseY").value = 1.8;
-      document.getElementById("roberReleaseYVal").textContent = "1.8 m";
-      roberGravity.value = "10.00";
-      resetSimulation();
-    });
-
-    // Classroom Sliders
     bindSlider("classV0", "classV0Val", state.classroom, "v0", "m/s", 0);
     bindSlider("classAngle", "classAngleVal", state.classroom, "thetaDeg", "°", 0);
     bindSlider("classCliffH", "classCliffHVal", state.classroom, "y0", "m", 0);
@@ -1840,102 +2157,25 @@
     bindSlider("classBldgX1", "classBldgX1Val", state.classroom, "x1", "m", 0);
     bindSlider("classBldgW", "classBldgWVal", state.classroom, "bldgWidth", "m", 0);
 
-    // Preset Cliff
-    const btnPresetCliff = document.getElementById("btnPresetCliff");
-    const btnPresetShark = document.getElementById("btnPresetShark");
-
-    btnPresetCliff.addEventListener("click", () => {
-      btnPresetCliff.classList.add("active");
-      btnPresetShark.classList.remove("active");
-      state.classroom.y0 = 320;
-      state.classroom.v0 = 42.0;
-      state.classroom.thetaDeg = 30.0;
-      state.classroom.x1 = 230;
-      state.classroom.x2 = 310;
-      state.classroom.bldgHeight = 70;
-      state.classroom.g = 10.0;
-
-      document.getElementById("classCliffH").value = 320;
-      document.getElementById("classCliffHVal").textContent = "320 m";
-      document.getElementById("classV0").value = 42;
-      document.getElementById("classV0Val").textContent = "42.0 m/s";
-      document.getElementById("classAngle").value = 30;
-      document.getElementById("classAngleVal").textContent = "30.0°";
-      document.getElementById("classBldgH").value = 70;
-      document.getElementById("classBldgHVal").textContent = "70 m";
-      document.getElementById("classBldgX1").value = 230;
-      document.getElementById("classBldgX1Val").textContent = "230 m";
-      resetSimulation();
-    });
-
-    btnPresetShark.addEventListener("click", () => {
-      btnPresetShark.classList.add("active");
-      btnPresetCliff.classList.remove("active");
-      state.classroom.y0 = 0.9;
-      state.classroom.v0 = 42.7;
-      state.classroom.thetaDeg = 0.0;
-      state.classroom.x1 = 18.0;
-      state.classroom.x2 = 19.0;
-      state.classroom.bldgHeight = 0.2;
-      state.classroom.g = 9.8;
-
-      document.getElementById("classCliffH").value = 1;
-      document.getElementById("classCliffHVal").textContent = "0.9 m";
-      document.getElementById("classV0").value = 43;
-      document.getElementById("classV0Val").textContent = "42.7 m/s";
-      document.getElementById("classAngle").value = 0;
-      document.getElementById("classAngleVal").textContent = "0.0°";
-      document.getElementById("classBldgH").value = 1;
-      document.getElementById("classBldgHVal").textContent = "0.2 m";
-      document.getElementById("classBldgX1").value = 18;
-      document.getElementById("classBldgX1Val").textContent = "18 m";
-      resetSimulation();
-    });
-
-    // Sandbox Sliders
     bindSlider("sbV0", "sbV0Val", state.sandbox, "v0", "m/s");
     bindSlider("sbAngle", "sbAngleVal", state.sandbox, "thetaDeg", "°");
     bindSlider("sbY0", "sbY0Val", state.sandbox, "y0", "m", 0);
     bindSlider("sbGravity", "sbGravityVal", state.sandbox, "g", "m/s²");
 
-    // Clear and Export Log
+    // Table actions
     document.getElementById("btnClearLog").addEventListener("click", () => {
       state.trials = [];
       updateTrialTable();
     });
     document.getElementById("btnExportCsv").addEventListener("click", exportCSV);
 
-    // Reset Defaults
-    document.getElementById("btnPresetDefault").addEventListener("click", () => {
-      if (state.mode === "monkey") {
-        state.monkey.v0 = 26.0;
-        state.monkey.thetaDeg = 32.6;
-        state.monkey.xm = 25.0;
-        state.monkey.ym = 16.0;
-        state.monkey.y0 = 0.0;
-        state.monkey.g = 9.80;
-        document.getElementById("monkeyV0").value = 26.0;
-        document.getElementById("monkeyV0Val").textContent = "26.0 m/s";
-        document.getElementById("monkeyAngle").value = 32.6;
-        document.getElementById("monkeyAngleVal").textContent = "32.6°";
-        document.getElementById("monkeyDist").value = 25.0;
-        document.getElementById("monkeyDistVal").textContent = "25.0 m";
-        document.getElementById("monkeyHeight").value = 16.0;
-        document.getElementById("monkeyHeightVal").textContent = "16.0 m";
-        document.getElementById("cannonHeight").value = 0.0;
-        document.getElementById("cannonHeightVal").textContent = "0.0 m";
-        simGravity.value = "9.80";
-      }
-      resetSimulation();
-    });
-
-    setupCanvasDragInteraction();
+    setupCanvasDrag();
     setupChallenge();
+    updatePresetBar();
   }
 
-  // Initialization
   function init() {
-    initUIBindings();
+    initUI();
     resizeCanvas();
     resetSimulation();
   }
