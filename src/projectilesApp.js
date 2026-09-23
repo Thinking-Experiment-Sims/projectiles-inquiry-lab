@@ -1665,17 +1665,15 @@
     const iconEl = document.getElementById("inquiryIcon");
     const titleEl = document.getElementById("inquiryTitle");
     const subtitleEl = document.getElementById("inquirySubtitle");
-    const tagEl = document.getElementById("inquiryTag");
     const qCountEl = document.getElementById("inquiryQCount");
     const narrativeEl = document.getElementById("inquiryNarrative");
     const listEl = document.getElementById("inquiryQuestionsList");
-    if (!titleEl || !tagEl || !narrativeEl || !listEl) return;
+    if (!titleEl || !narrativeEl || !listEl) return;
 
     if (mode === "monkey") {
       if (iconEl) iconEl.textContent = "🐵";
       titleEl.textContent = "Feed the Monkey: Free-Fall Intercept Challenge";
       if (subtitleEl) subtitleEl.textContent = "Direct sightline targeting & equal gravitational drop investigation";
-      tagEl.textContent = "Target Intercept";
       if (qCountEl) qCountEl.textContent = "4 Questions";
       narrativeEl.innerHTML = `A hungry monkey hangs from a tree branch at horizontal distance ${katex("x_m")} and vertical elevation ${katex("y_m")}. A cannon fires a banana directly along the straight line of sight to the monkey with initial launch velocity ${katex("v_0")}. The exact millisecond the cannon discharges, the monkey releases the branch and falls vertically from rest in free fall under gravity.`;
       listEl.innerHTML = `
@@ -1688,7 +1686,6 @@
       if (iconEl) iconEl.textContent = "🎯";
       titleEl.textContent = "Mark Rober's Automated Dartboard Challenge";
       if (subtitleEl) subtitleEl.textContent = "Ceiling clearance & motorized target intercept trajectory";
-      tagEl.textContent = "Clearance & Intercept";
       if (qCountEl) qCountEl.textContent = "4 Questions";
       narrativeEl.innerHTML = `A dart is thrown from release height ${katex("y_0")} with initial speed ${katex("v_0")} at angle ${katex("\\alpha")} toward a motorized target dartboard at horizontal distance ${katex("x_{\\text{board}}")}. A low overhead ceiling beam is located at height ${katex("H_{\\text{ceiling}}")}.`;
       listEl.innerHTML = `
@@ -1703,7 +1700,6 @@
         if (iconEl) iconEl.textContent = "🎾";
         titleEl.textContent = "Problem 49: Tennis Flat Serve Clearance & Service Box Landing";
         if (subtitleEl) subtitleEl.textContent = "Horizontal projectile launch over net obstacle";
-        tagEl.textContent = "Problem 49";
         if (qCountEl) qCountEl.textContent = "3 Questions";
         narrativeEl.innerHTML = `A tennis player strikes a horizontal serve (${katex("\\theta = 0^\\circ")}) from baseline height ${katex("y_0 = 2.50\\text{ m}")} at speed ${katex("v_0 = 40.0\\text{ m/s}")}. The net is positioned ${katex("12.0\\text{ m}")} away with height ${katex("0.92\\text{ m}")}, and the legal service court boundary is ${katex("18.4\\text{ m}")} from the server.`;
         listEl.innerHTML = `
@@ -1715,7 +1711,6 @@
         if (iconEl) iconEl.textContent = "⚽";
         titleEl.textContent = "Problem 48: Soccer Free Kick over Defensive Wall";
         if (subtitleEl) subtitleEl.textContent = "Angled ground-to-ground projectile over regulation obstacle";
-        tagEl.textContent = "Problem 48";
         if (qCountEl) qCountEl.textContent = "3 Questions";
         narrativeEl.innerHTML = `A soccer player takes a free kick from ground level (${katex("y_0 = 0")}) at initial speed ${katex("v_0 = 23.3\\text{ m/s}")} at an elevation angle of ${katex("\\theta = 31.0^\\circ")} (${katex("v_{0x} = 20.0\\text{ m/s}, v_{0y} = 12.0\\text{ m/s}")}). A defensive wall of height ${katex("2.44\\text{ m}")} stands between ${katex("x = 49.0\\text{ m}")} and ${katex("52.0\\text{ m}")}.`;
         listEl.innerHTML = `
@@ -1727,7 +1722,6 @@
         if (iconEl) iconEl.textContent = "📦";
         titleEl.textContent = "Problem 46: Tabletop Roll-Off Kinematics";
         if (subtitleEl) subtitleEl.textContent = "Horizontal launch from elevated flat surface";
-        tagEl.textContent = "Problem 46";
         if (qCountEl) qCountEl.textContent = "3 Questions";
         narrativeEl.innerHTML = `A laboratory block slides horizontally off the flat edge of a table at height ${katex("y_0 = 2.00\\text{ m}")} with speed ${katex("v_0 = 5.00\\text{ m/s}")} (${katex("\\theta = 0^\\circ")}).`;
         listEl.innerHTML = `
@@ -1739,7 +1733,6 @@
         if (iconEl) iconEl.textContent = "⛰️";
         titleEl.textContent = "Problem 47: 100m Elevated Cliff Launch (Target Range)";
         if (subtitleEl) subtitleEl.textContent = "Determining required horizontal speed for ground target";
-        tagEl.textContent = "Problem 47";
         if (qCountEl) qCountEl.textContent = "3 Questions";
         narrativeEl.innerHTML = `A projectile is launched horizontally (${katex("v_{0y} = 0")}) from the summit of a vertical cliff of height ${katex("y_0 = 100.0\\text{ m}")} toward a ground target at horizontal distance ${katex("x = 300.0\\text{ m}")}.`;
         listEl.innerHTML = `
@@ -1751,7 +1744,6 @@
         if (iconEl) iconEl.textContent = "🏔️";
         titleEl.textContent = "Lecture Notes: Cliff Launch over 70m Obstacle Building";
         if (subtitleEl) subtitleEl.textContent = "Classroom lecture problem: multi-condition clearance & flight";
-        tagEl.textContent = "Lecture Notes";
         if (qCountEl) qCountEl.textContent = "4 Questions";
         narrativeEl.innerHTML = `A projectile is launched from the top edge of a ${katex("320\\text{ m}")} cliff at speed ${katex("v_0 = 42.0\\text{ m/s}")} angled at ${katex("\\theta = 30.0^\\circ")} above horizontal. Standing between ${katex("x = 230\\text{ m}")} and ${katex("x = 310\\text{ m}")} is a building of height ${katex("70.0\\text{ m}")}.`;
         listEl.innerHTML = `
@@ -1765,7 +1757,6 @@
       if (iconEl) iconEl.textContent = "🧪";
       titleEl.textContent = "2D Projectile Kinematics Sandbox";
       if (subtitleEl) subtitleEl.textContent = "Exploration of arbitrary launch angles, elevations, and gravity fields";
-      tagEl.textContent = "Exploration";
       if (qCountEl) qCountEl.textContent = "3 Questions";
       narrativeEl.innerHTML = `Explore arbitrary 2D projectile trajectories with custom initial launch velocity ${katex("v_0")}, angle ${katex("\\theta")}, initial height ${katex("y_0")}, and gravitational acceleration ${katex("g")}.`;
       listEl.innerHTML = `
