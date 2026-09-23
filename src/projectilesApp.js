@@ -1057,7 +1057,9 @@
             },
             {
               label: "Net Clearance Comparison",
-              math: `${katex(`y_{\\text{net}} = ${yNet}\\text{ m} > ${cp.bldgHeight.toFixed(2)}\\text{ m} \\implies \\text{Margin} = +${(parseFloat(yNet) - cp.bldgHeight).toFixed(2)}\\text{ m}`)} <span class="math-eval-tag" style="color: var(--success);">Net Cleared!</span>`
+              math: clearsNet
+                ? `${katex(`y_{\\text{net}} = ${yNet}\\text{ m} > ${cp.bldgHeight.toFixed(2)}\\text{ m} \\implies \\text{Margin} = +${(parseFloat(yNet) - cp.bldgHeight).toFixed(2)}\\text{ m}`)} <span class="math-eval-tag" style="color: var(--success);">Net Cleared!</span>`
+                : `${katex(`y_{\\text{net}} = ${yNet}\\text{ m} \\le ${cp.bldgHeight.toFixed(2)}\\text{ m} \\implies \\text{Hits Net by } ${(cp.bldgHeight - parseFloat(yNet)).toFixed(2)}\\text{ m}`)} <span class="math-eval-tag" style="color: var(--error);">Hits Net!</span>`
             }
           ]
         );
@@ -1076,7 +1078,9 @@
             },
             {
               label: "Service Box Comparison",
-              math: `${katex(`x_{\\text{land}} = ${xLand}\\text{ m} > ${cp.x2.toFixed(1)}\\text{ m (Service line)} \\implies \\text{Over by } ${(parseFloat(xLand) - cp.x2).toFixed(1)}\\text{ m}`)} <span class="math-eval-tag" style="color: var(--error);">LONG / OUT</span>`
+              math: inCourt
+                ? `${katex(`x_{\\text{land}} = ${xLand}\\text{ m} \\le ${cp.x2.toFixed(1)}\\text{ m} \\implies \\text{In by } ${(cp.x2 - parseFloat(xLand)).toFixed(1)}\\text{ m}`)} <span class="math-eval-tag" style="color: var(--success);">IN / GOOD</span>`
+                : `${katex(`x_{\\text{land}} = ${xLand}\\text{ m} > ${cp.x2.toFixed(1)}\\text{ m} \\implies \\text{Over by } ${(parseFloat(xLand) - cp.x2).toFixed(1)}\\text{ m}`)} <span class="math-eval-tag" style="color: var(--error);">LONG / OUT</span>`
             }
           ],
           true
@@ -1439,90 +1443,129 @@
   // Inquiry Scenario Card & Pedagogical Problem Prompts
   // ==========================================================================
 
+  function toggleInquiryCard(forceState) {
+    const card = document.getElementById("inquiryScenarioCard");
+    const header = document.getElementById("inquiryHeader");
+    const toggleText = document.getElementById("inquiryToggleText");
+    if (!card) return;
+
+    const isOpen = typeof forceState === "boolean" ? forceState : !card.classList.contains("open");
+    card.classList.toggle("open", isOpen);
+    if (header) header.setAttribute("aria-expanded", String(isOpen));
+    if (toggleText) toggleText.textContent = isOpen ? "Hide Problem & Questions" : "View Problem & Questions";
+  }
+
   function updateInquiryScenarioCard(mode, presetKey = "") {
+    const iconEl = document.getElementById("inquiryIcon");
     const titleEl = document.getElementById("inquiryTitle");
+    const subtitleEl = document.getElementById("inquirySubtitle");
     const tagEl = document.getElementById("inquiryTag");
+    const qCountEl = document.getElementById("inquiryQCount");
     const narrativeEl = document.getElementById("inquiryNarrative");
     const listEl = document.getElementById("inquiryQuestionsList");
     if (!titleEl || !tagEl || !narrativeEl || !listEl) return;
 
     if (mode === "monkey") {
-      titleEl.innerHTML = "🐵 Feed the Monkey: Free-Fall Intercept Challenge";
+      if (iconEl) iconEl.textContent = "🐵";
+      titleEl.textContent = "Feed the Monkey: Free-Fall Intercept Challenge";
+      if (subtitleEl) subtitleEl.textContent = "Direct sightline targeting & equal gravitational drop investigation";
       tagEl.textContent = "Target Intercept";
-      narrativeEl.innerHTML = "A hungry monkey hangs from a tree branch at horizontal distance <var>x<sub>m</sub></var> and height <var>y<sub>m</sub></var>. A zookeeper aims a cannon directly along the visual line of sight and fires a banana with launch speed <var>v₀</var>. The exact millisecond the cannon fires, the monkey lets go and drops vertically in free fall.";
+      if (qCountEl) qCountEl.textContent = "4 Questions";
+      narrativeEl.innerHTML = `A hungry monkey hangs from a tree branch at horizontal distance ${katex("x_m")} and vertical elevation ${katex("y_m")}. A cannon fires a banana directly along the straight line of sight to the monkey with initial launch velocity ${katex("v_0")}. The exact millisecond the cannon discharges, the monkey releases the branch and falls vertically from rest in free fall under gravity.`;
       listEl.innerHTML = `
-        <li><strong>(a) Aim Direction:</strong> Where must the cannon be aimed (above, directly at, or below the monkey) to ensure the banana intercepts the falling monkey before reaching the ground?</li>
-        <li><strong>(b) Speed Invariance:</strong> How does changing the launch velocity <var>v₀</var> affect whether an intercept occurs (assuming the banana reaches distance <var>x<sub>m</sub></var> prior to ground impact)?</li>
-        <li><strong>(c) Deflection from Sight Line:</strong> In time <var>t</var>, how far do both the banana and monkey fall below the straight unaccelerated line of sight? (Recall <var>&Delta;y = &frac12;gt&sup2;</var>).</li>
-        <li><strong>(d) Minimum Catch Velocity:</strong> Calculate the minimum initial speed <var>v₀</var> needed so the intercept occurs at or above ground level (<var>y &ge; 0</var>).</li>
+        <li><span class="q-badge">(a) Aim Direction</span> Where must the cannon aim relative to the monkey to guarantee an intercept before hitting the ground? (Above, directly at, or below?)</li>
+        <li><span class="q-badge">(b) Speed Invariance</span> Why does the projectile strike the falling monkey regardless of the launch speed ${katex("v_0")} (provided the banana reaches distance ${katex("x_m")} before ground impact)?</li>
+        <li><span class="q-badge">(c) Deflection from Sight Line</span> In flight time ${katex("t")}, how far do both the banana and monkey drop below the unaccelerated line-of-sight ray? (Show using ${katex("\\Delta y = \\frac{1}{2}gt^2")}).</li>
+        <li><span class="q-badge">(d) Minimum Catch Velocity</span> Calculate the minimum initial launch speed ${katex("v_0")} required so that the intercept occurs at or above ground level (${katex("y \\ge 0")}).</li>
       `;
     } else if (mode === "mark-rober") {
-      titleEl.innerHTML = "🎯 Mark Rober's Dartboard Kinematics Challenge";
+      if (iconEl) iconEl.textContent = "🎯";
+      titleEl.textContent = "Mark Rober's Automated Dartboard Challenge";
+      if (subtitleEl) subtitleEl.textContent = "Ceiling clearance & motorized target intercept trajectory";
       tagEl.textContent = "Clearance & Intercept";
-      narrativeEl.innerHTML = "A player tosses a dart from release height <var>y₀</var> at launch speed <var>v₀</var> and angle <var>&alpha;</var> toward a target dartboard at horizontal distance <var>x<sub>board</sub></var>. A low ceiling / overhead obstacle stands at height <var>H<sub>ceiling</sub></var>.";
+      if (qCountEl) qCountEl.textContent = "4 Questions";
+      narrativeEl.innerHTML = `A dart is thrown from release height ${katex("y_0")} with initial speed ${katex("v_0")} at angle ${katex("\\alpha")} toward a motorized target dartboard at horizontal distance ${katex("x_{\\text{board}}")}. A low overhead ceiling beam is located at height ${katex("H_{\\text{ceiling}}")}.`;
       listEl.innerHTML = `
-        <li><strong>(a) Low Ceiling Clearance:</strong> Does the dart clear the low overhead ceiling beam at its trajectory apex, or does it strike the obstacle? Calculate peak altitude <var>y<sub>max</sub></var>.</li>
-        <li><strong>(b) Dartboard Impact Height:</strong> At what exact height <var>y</var> does the dart impact the dartboard located at <var>x = x<sub>board</sub></var>?</li>
-        <li><strong>(c) Impact Velocity &amp; Penetration Angle:</strong> What are the velocity components <var>v<sub>x</sub></var> and <var>v<sub>y</sub></var> upon striking the board, and at what angle does the dart arrive?</li>
-        <li><strong>(d) Optimum Launch Angle:</strong> What launch angle maximizes the target height or ensures safe ceiling clearance?</li>
+        <li><span class="q-badge">(a) Low Ceiling Clearance</span> Does the dart clear the low overhead ceiling beam at its trajectory apex, or does it collide? Calculate peak altitude ${katex("y_{\\text{max}} = y_0 + \\frac{v_{0y}^2}{2g}")}.</li>
+        <li><span class="q-badge">(b) Target Impact Height</span> At what exact vertical height ${katex("H")} does the dart strike the motorized target board at ${katex("x = x_{\\text{board}}")}?</li>
+        <li><span class="q-badge">(c) Impact Velocity Vector</span> Find the velocity components ${katex("v_x")} and ${katex("v_y")} upon striking the board, and determine the penetration angle below horizontal.</li>
+        <li><span class="q-badge">(d) Critical Ceiling Velocity</span> What is the maximum allowable launch speed ${katex("v_0")} before the dart collides with the ceiling beam?</li>
       `;
     } else if (mode === "classroom") {
       const pType = presetKey || (state.classroom ? state.classroom.problemType : "cliff-building");
       if (pType === "tennis") {
-        titleEl.innerHTML = "🎾 Tennis Flat Serve Net Clearance";
+        if (iconEl) iconEl.textContent = "🎾";
+        titleEl.textContent = "Tennis Flat Serve Clearance & Service Box Landing";
+        if (subtitleEl) subtitleEl.textContent = "Horizontal projectile launch over net obstacle";
         tagEl.textContent = "Horizontal Launch";
-        narrativeEl.innerHTML = "A tennis player strikes a horizontal serve (<var>&theta; = 0&deg;</var>) from baseline height <var>y₀ = 2.50&text; m</var> at speed <var>v₀ = 40.0&text; m/s</var>. The net is <var>12.0&text; m</var> away with height <var>0.92&text; m</var>, and the service box boundary is <var>18.4&text; m</var> from the server.";
+        if (qCountEl) qCountEl.textContent = "3 Questions";
+        narrativeEl.innerHTML = `A tennis player strikes a horizontal serve (${katex("\\theta = 0^\\circ")}) from baseline height ${katex("y_0 = 2.50\\text{ m}")} at speed ${katex("v_0 = 40.0\\text{ m/s}")}. The net is positioned ${katex("12.0\\text{ m}")} away with height ${katex("0.92\\text{ m}")}, and the legal service court boundary is ${katex("18.4\\text{ m}")} from the server.`;
         listEl.innerHTML = `
-          <li><strong>(a) Net Clearance:</strong> Does the tennis ball clear the 0.92 m net at distance <var>x = 12.0&text; m</var>? Calculate the vertical clearance margin.</li>
-          <li><strong>(b) Service Box Landing:</strong> Does the serve land within the legal service box boundary (<var>x &le; 18.4&text; m</var>)? What is its exact court impact distance?</li>
-          <li><strong>(c) Impact Velocity:</strong> Find the magnitude and direction of the velocity vector when the ball hits the court surface.</li>
+          <li><span class="q-badge">(a) Net Clearance</span> Does the tennis ball clear the ${katex("0.92\\text{ m}")} net at distance ${katex("x = 12.0\\text{ m}")}? Calculate the vertical clearance margin.</li>
+          <li><span class="q-badge">(b) Service Box Landing</span> Does the serve land within the legal service box boundary (${katex("x \\le 18.4\\text{ m}")})? What is its exact court landing distance ${katex("x_{\\text{land}}")}?</li>
+          <li><span class="q-badge">(c) Impact Speed</span> Find the magnitude and direction of the velocity vector when the ball hits the court surface.</li>
         `;
       } else if (pType === "soccer") {
-        titleEl.innerHTML = "⚽ Soccer Free Kick over Defensive Wall";
+        if (iconEl) iconEl.textContent = "⚽";
+        titleEl.textContent = "Soccer Free Kick over Defensive Wall";
+        if (subtitleEl) subtitleEl.textContent = "Angled ground-to-ground projectile over regulation obstacle";
         tagEl.textContent = "Angled Projection";
-        narrativeEl.innerHTML = "A soccer player takes a free kick from ground level (<var>y₀ = 0</var>) at initial speed <var>v₀ = 23.3&text; m/s</var> at an elevation angle of <var>&theta; = 31.0&deg;</var>. A defensive wall of height <var>2.44&text; m</var> stands between <var>x = 49.0&text; m</var> and <var>52.0&text; m</var>.";
+        if (qCountEl) qCountEl.textContent = "3 Questions";
+        narrativeEl.innerHTML = `A soccer player takes a free kick from ground level (${katex("y_0 = 0")}) at initial speed ${katex("v_0 = 23.3\\text{ m/s}")} at an elevation angle of ${katex("\\theta = 31.0^\\circ")} (${katex("v_{0x} = 20.0\\text{ m/s}, v_{0y} = 12.0\\text{ m/s}")}). A defensive wall of height ${katex("2.44\\text{ m}")} stands between ${katex("x = 49.0\\text{ m}")} and ${katex("52.0\\text{ m}")}.`;
         listEl.innerHTML = `
-          <li><strong>(a) Defensive Wall Clearance:</strong> Does the ball clear the top of the defensive wall? Calculate the height of the ball at <var>x = 49.0&text; m</var> and <var>x = 52.0&text; m</var>.</li>
-          <li><strong>(b) Total Range &amp; Hang Time:</strong> How long does the ball remain airborne, and at what horizontal distance does it hit the ground?</li>
-          <li><strong>(c) Peak Height:</strong> What is the maximum altitude reached by the soccer ball above the pitch?</li>
+          <li><span class="q-badge">(a) Wall Clearance</span> Does the ball clear the top of the defensive wall? Calculate the height of the ball at ${katex("x = 49.0\\text{ m}")} and ${katex("x = 52.0\\text{ m}")}.</li>
+          <li><span class="q-badge">(b) Total Range &amp; Hang Time</span> How long does the ball remain airborne (${katex("t_{\\text{flight}} = \\frac{2v_{0y}}{g}")}), and at what horizontal distance does it hit the pitch?</li>
+          <li><span class="q-badge">(c) Peak Height</span> What is the maximum apex altitude reached by the soccer ball above the pitch?</li>
         `;
       } else if (pType === "box-drop") {
-        titleEl.innerHTML = "📦 Tabletop Roll-Off Kinematics";
+        if (iconEl) iconEl.textContent = "📦";
+        titleEl.textContent = "Tabletop Roll-Off Kinematics";
+        if (subtitleEl) subtitleEl.textContent = "Horizontal launch from elevated flat surface";
         tagEl.textContent = "Horizontal Launch";
-        narrativeEl.innerHTML = "A laboratory block slides horizontally off the flat edge of a table at height <var>y₀ = 2.00&text; m</var> with speed <var>v₀ = 5.00&text; m/s</var> (<var>&theta; = 0&deg;</var>).";
+        if (qCountEl) qCountEl.textContent = "3 Questions";
+        narrativeEl.innerHTML = `A laboratory block slides horizontally off the flat edge of a table at height ${katex("y_0 = 2.00\\text{ m}")} with speed ${katex("v_0 = 5.00\\text{ m/s}")} (${katex("\\theta = 0^\\circ")}).`;
         listEl.innerHTML = `
-          <li><strong>(a) Time in Free Fall:</strong> Calculate the time required for the block to fall from the tabletop to the floor (<var>y = 0</var>).</li>
-          <li><strong>(b) Horizontal Displacement:</strong> How far from the edge of the table (<var>&Delta;x</var>) does the block land?</li>
-          <li><strong>(c) Impact Velocity:</strong> Determine the final velocity vector (magnitude and angle below horizontal) immediately prior to landing.</li>
+          <li><span class="q-badge">(a) Time in Free Fall</span> Calculate the time required for the block to fall from the tabletop to the floor (${katex("y = 0")}).</li>
+          <li><span class="q-badge">(b) Horizontal Displacement</span> How far from the edge of the table (${katex("\\Delta x")}) does the block land?</li>
+          <li><span class="q-badge">(c) Impact Velocity</span> Determine the final velocity vector (magnitude and angle below horizontal) immediately prior to landing.</li>
         `;
       } else if (pType === "cliff-100m") {
-        titleEl.innerHTML = "⛰️ 100m Elevated Cliff Launch (Target Range)";
+        if (iconEl) iconEl.textContent = "⛰️";
+        titleEl.textContent = "100m Elevated Cliff Launch (Target Range)";
+        if (subtitleEl) subtitleEl.textContent = "Determining required horizontal speed for ground target";
         tagEl.textContent = "Target Range";
-        narrativeEl.innerHTML = "A projectile is launched horizontally from the edge of a vertical cliff of height <var>y₀ = 100&text; m</var> toward a target placed on the ground at horizontal distance <var>x = 300&text; m</var>.";
+        if (qCountEl) qCountEl.textContent = "3 Questions";
+        narrativeEl.innerHTML = `A projectile is launched horizontally (${katex("v_{0y} = 0")}) from the summit of a vertical cliff of height ${katex("y_0 = 100.0\\text{ m}")} toward a ground target at horizontal distance ${katex("x = 300.0\\text{ m}")}.`;
         listEl.innerHTML = `
-          <li><strong>(a) Free Fall Duration:</strong> How long does it take for any object dropped or horizontally fired from <var>100&text; m</var> to hit the ground?</li>
-          <li><strong>(b) Required Launch Speed:</strong> What horizontal launch velocity <var>v₀</var> must be imparted to hit the target at <var>x = 300&text; m</var>?</li>
-          <li><strong>(c) Final Velocity at Impact:</strong> Compute the impact speed and angle with the ground upon target contact.</li>
+          <li><span class="q-badge">(a) Free Fall Duration</span> How long does it take for any object dropped or horizontally fired from ${katex("100.0\\text{ m}")} to hit the ground?</li>
+          <li><span class="q-badge">(b) Required Launch Speed</span> What horizontal launch velocity ${katex("v_0")} must be imparted to hit the target at ${katex("x = 300.0\\text{ m}")}?</li>
+          <li><span class="q-badge">(c) Final Velocity at Impact</span> Compute the impact speed and angle with the ground upon target contact.</li>
         `;
       } else {
-        titleEl.innerHTML = "🏔️ Cliff Launch over Obstacle Building";
+        if (iconEl) iconEl.textContent = "🏔️";
+        titleEl.textContent = "Cliff Launch over 70m Obstacle Building";
+        if (subtitleEl) subtitleEl.textContent = "Classroom lecture problem: multi-condition clearance & flight";
         tagEl.textContent = "Classroom Problem";
-        narrativeEl.innerHTML = "A projectile is launched from the top edge of a <var>320&text; m</var> cliff at speed <var>v₀ = 42.0&text; m/s</var> angled at <var>&theta; = 30.0&deg;</var> above horizontal. Standing between <var>x = 230&text; m</var> and <var>x = 310&text; m</var> is a building of height <var>70.0&text; m</var>.";
+        if (qCountEl) qCountEl.textContent = "4 Questions";
+        narrativeEl.innerHTML = `A projectile is launched from the top edge of a ${katex("320\\text{ m}")} cliff at speed ${katex("v_0 = 42.0\\text{ m/s}")} angled at ${katex("\\theta = 30.0^\\circ")} above horizontal. Standing between ${katex("x = 230\\text{ m}")} and ${katex("x = 310\\text{ m}")} is a building of height ${katex("70.0\\text{ m}")}.`;
         listEl.innerHTML = `
-          <li><strong>(a) Peak Altitude &amp; Rise Time:</strong> What is the maximum height reached by the projectile above the ground, and at what time is apex achieved?</li>
-          <li><strong>(b) Obstacle Clearance:</strong> Does the projectile clear the roof of the building at its front face (<var>x = 230&text; m</var>) and back face (<var>x = 310&text; m</var>)? Calculate clearance heights.</li>
-          <li><strong>(c) Total Flight Time:</strong> Solve the quadratic position equation for total time of flight until ground impact (<var>y = 0</var>).</li>
-          <li><strong>(d) Final Impact Velocity &amp; Range:</strong> Determine the horizontal range and the speed and angle upon ground landing.</li>
+          <li><span class="q-badge">(a) Peak Altitude &amp; Rise Time</span> What is the maximum height reached by the projectile above the ground, and at what time is apex achieved?</li>
+          <li><span class="q-badge">(b) Obstacle Clearance</span> Does the projectile clear the roof of the building at its front face (${katex("x = 230\\text{ m}")}) and back face (${katex("x = 310\\text{ m}")})? Calculate clearance heights.</li>
+          <li><span class="q-badge">(c) Total Flight Time</span> Solve the quadratic position equation ${katex("y(t) = 0")} for total time of flight until ground impact.</li>
+          <li><span class="q-badge">(d) Final Impact Velocity &amp; Range</span> Determine the horizontal range and the speed and angle upon ground landing.</li>
         `;
       }
     } else {
-      titleEl.innerHTML = "🧪 2D Projectile Kinematics Sandbox";
+      if (iconEl) iconEl.textContent = "🧪";
+      titleEl.textContent = "2D Projectile Kinematics Sandbox";
+      if (subtitleEl) subtitleEl.textContent = "Exploration of arbitrary launch angles, elevations, and gravity fields";
       tagEl.textContent = "Exploration";
-      narrativeEl.innerHTML = "Explore arbitrary 2D projectile trajectories with custom initial launch velocity <var>v₀</var>, angle <var>&theta;</var>, initial height <var>y₀</var>, and gravitational acceleration <var>g</var>.";
+      if (qCountEl) qCountEl.textContent = "3 Questions";
+      narrativeEl.innerHTML = `Explore arbitrary 2D projectile trajectories with custom initial launch velocity ${katex("v_0")}, angle ${katex("\\theta")}, initial height ${katex("y_0")}, and gravitational acceleration ${katex("g")}.`;
       listEl.innerHTML = `
-        <li><strong>(a) Angle of Maximum Range:</strong> Investigate how the launch angle <var>&theta;</var> maximizing range shifts from <var>45&deg;</var> when launch height <var>y₀ &gt; 0</var>.</li>
-        <li><strong>(b) Independence of Components:</strong> Observe how horizontal velocity <var>v<sub>x</sub></var> remains strictly constant while vertical velocity <var>v<sub>y</sub></var> decreases linearly at rate <var>-g</var>.</li>
-        <li><strong>(c) Parabolic Path Equation:</strong> Verify the trajectory equation <var>y(x) = y₀ + x\tan\theta - \frac{g x²}{2 v₀² \cos²\theta}</var> by inspecting coordinates along the path.</li>
+        <li><span class="q-badge">(a) Angle of Maximum Range</span> Investigate how the launch angle ${katex("\\theta")} maximizing range shifts from ${katex("45^\\circ")} when launch height ${katex("y_0 > 0")}.</li>
+        <li><span class="q-badge">(b) Independence of Components</span> Observe how horizontal velocity ${katex("v_x")} remains strictly constant while vertical velocity ${katex("v_y")} decreases linearly at rate ${katex("-g")}.</li>
+        <li><span class="q-badge">(c) Parabolic Path Equation</span> Verify the trajectory equation ${katex("y(x) = y_0 + x\\tan(\\theta) - \\frac{g x^2}{2 v_0^2 \\cos^2(\\theta)}")} by inspecting coordinates along the path.</li>
       `;
     }
   }
@@ -2808,6 +2851,25 @@
       btnToggleGuide.setAttribute("aria-expanded", "false");
       btnToggleGuide.textContent = "📘 Guided Activities & How-To";
     });
+
+    // Inquiry Problem Scenario Drawer Toggle
+    const inquiryHeader = document.getElementById("inquiryHeader");
+    const btnToggleInquiry = document.getElementById("btnToggleInquiry");
+    if (inquiryHeader) {
+      inquiryHeader.addEventListener("click", () => toggleInquiryCard());
+      inquiryHeader.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggleInquiryCard();
+        }
+      });
+    }
+    if (btnToggleInquiry) {
+      btnToggleInquiry.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleInquiryCard();
+      });
+    }
 
     // Quick Action button in controls bar
     btnQuickModeAction.addEventListener("click", () => {

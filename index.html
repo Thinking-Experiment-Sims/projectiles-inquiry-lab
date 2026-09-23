@@ -117,21 +117,33 @@
 
         <!-- Problem Statement & Explicit Questions Card -->
         <div class="inquiry-scenario-card" id="inquiryScenarioCard">
-          <div class="inquiry-header">
-            <h3 class="inquiry-title" id="inquiryTitle">🐵 Feed the Monkey: Free-Fall Intercept Challenge</h3>
-            <span class="inquiry-tag" id="inquiryTag">Target Intercept</span>
+          <div class="inquiry-header" id="inquiryHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="inquiryBody" title="Click to expand/collapse problem statement and investigation questions">
+            <div class="inquiry-header-left">
+              <span class="inquiry-header-icon" id="inquiryIcon">🐵</span>
+              <div class="inquiry-header-text">
+                <span class="inquiry-title" id="inquiryTitle">Feed the Monkey: Free-Fall Intercept Challenge</span>
+                <span class="inquiry-subtitle" id="inquirySubtitle">Direct sightline targeting &amp; equal gravitational drop investigation</span>
+              </div>
+              <span class="inquiry-tag" id="inquiryTag">Target Intercept</span>
+            </div>
+            <button type="button" class="inquiry-toggle-btn" id="btnToggleInquiry" aria-label="Toggle problem details">
+              <span class="toggle-text" id="inquiryToggleText">View Problem &amp; Questions</span>
+              <span class="toggle-chevron" id="inquiryChevron">▾</span>
+            </button>
           </div>
-          <p class="inquiry-narrative" id="inquiryNarrative">
-            A monkey hangs from a branch at height y<sub>m</sub> at distance x<sub>m</sub>. A cannon shoots a banana directly along the straight line of sight to the monkey. The instant the cannon fires, the monkey releases the branch and drops vertically in free fall.
-          </p>
-          <div class="inquiry-questions-box">
-            <div class="inquiry-questions-heading">Investigation Questions:</div>
-            <ol class="inquiry-questions-list" id="inquiryQuestionsList">
-              <li><strong>(a) Aim Direction:</strong> Where should you aim to ensure the banana reaches the monkey before it strikes the ground?</li>
-              <li><strong>(b) Launch Speed Independence:</strong> How does increasing or decreasing initial velocity v₀ affect whether the monkey catches the banana?</li>
-              <li><strong>(c) Zero-G Equivalence:</strong> What trajectory would the banana take in zero gravity, and how does gravity curve both paths identically?</li>
-              <li><strong>(d) Mathematical Proof:</strong> Prove using Δy = ½gt² why both objects fall by the exact same distance from the line of sight.</li>
-            </ol>
+
+          <div class="inquiry-body" id="inquiryBody">
+            <div class="inquiry-narrative-box">
+              <div class="inquiry-section-label">Problem Scenario &amp; Physical Setup</div>
+              <p class="inquiry-narrative" id="inquiryNarrative"></p>
+            </div>
+            <div class="inquiry-questions-box">
+              <div class="inquiry-questions-heading">
+                <span>🎯 Guided Investigation Questions</span>
+                <span class="inquiry-q-count" id="inquiryQCount">4 Questions</span>
+              </div>
+              <ol class="inquiry-questions-list" id="inquiryQuestionsList"></ol>
+            </div>
           </div>
         </div>
 
