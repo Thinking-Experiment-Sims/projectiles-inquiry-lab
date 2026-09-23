@@ -1360,7 +1360,7 @@
         </div>
       `;
     }
-  }
+
     // Update Cornell T-Chart
     const decomp = ProjectilesPhysics.decomposeVelocity(v0, thetaDeg);
     const tcVx = document.getElementById("tcVx");

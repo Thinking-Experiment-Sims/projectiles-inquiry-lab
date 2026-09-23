@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="styles.css">
   <!-- KaTeX for pristine vector mathematical typesetting -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
   <!-- Blueprint grid matching The Thinking Experiment Hub -->
@@ -43,7 +43,7 @@
       </div>
       <div class="guide-grid">
         <div class="guide-card-item">
-          <div class="guide-card-title">🐵 1. Feed the Monkey (Gizmo Activity)</div>
+          <div class="guide-card-title">🐵 1. Feed the Monkey Intercept Challenge</div>
           <p><strong>Question:</strong> Where should you aim a banana to feed a falling monkey that releases its branch the instant the cannon fires?</p>
           <ol>
             <li>Turn on <strong>Line of Sight</strong> or click <strong>Auto-Aim</strong> to point directly at the monkey.</li>
@@ -89,13 +89,13 @@
     <!-- Mode Navigation Tabs -->
     <nav class="mode-nav-bar" role="tablist" aria-label="Simulation Investigation Modes">
       <button type="button" class="mode-pill-btn active" data-mode="monkey" role="tab" aria-selected="true">
-        <span>🐵</span> Feed the Monkey (Gizmo)
+        <span>🐵</span> Feed the Monkey
       </button>
       <button type="button" class="mode-pill-btn" data-mode="mark-rober" role="tab" aria-selected="false">
         <span>🎯</span> Mark Rober Dartboard
       </button>
       <button type="button" class="mode-pill-btn" data-mode="classroom" role="tab" aria-selected="false">
-        <span>📋</span> Classroom &amp; Packet 6
+        <span>📋</span> Classroom Trajectories
       </button>
       <button type="button" class="mode-pill-btn" data-mode="sandbox" role="tab" aria-selected="false">
         <span>🧪</span> Free Sandbox
@@ -113,6 +113,26 @@
             <span id="lockBannerText">Aim directly at the monkey and release to observe equal vertical drop!</span>
           </div>
           <span id="lockBannerSub" style="font-size: 0.78rem; font-weight: 600; color: var(--primary-teal-dark);">Ready to Launch</span>
+        </div>
+
+        <!-- Problem Statement & Explicit Questions Card -->
+        <div class="inquiry-scenario-card" id="inquiryScenarioCard">
+          <div class="inquiry-header">
+            <h3 class="inquiry-title" id="inquiryTitle">🐵 Feed the Monkey: Free-Fall Intercept Challenge</h3>
+            <span class="inquiry-tag" id="inquiryTag">Target Intercept</span>
+          </div>
+          <p class="inquiry-narrative" id="inquiryNarrative">
+            A monkey hangs from a branch at height y<sub>m</sub> at distance x<sub>m</sub>. A cannon shoots a banana directly along the straight line of sight to the monkey. The instant the cannon fires, the monkey releases the branch and drops vertically in free fall.
+          </p>
+          <div class="inquiry-questions-box">
+            <div class="inquiry-questions-heading">Investigation Questions:</div>
+            <ol class="inquiry-questions-list" id="inquiryQuestionsList">
+              <li><strong>(a) Aim Direction:</strong> Where should you aim to ensure the banana reaches the monkey before it strikes the ground?</li>
+              <li><strong>(b) Launch Speed Independence:</strong> How does increasing or decreasing initial velocity v₀ affect whether the monkey catches the banana?</li>
+              <li><strong>(c) Zero-G Equivalence:</strong> What trajectory would the banana take in zero gravity, and how does gravity curve both paths identically?</li>
+              <li><strong>(d) Mathematical Proof:</strong> Prove using Δy = ½gt² why both objects fall by the exact same distance from the line of sight.</li>
+            </ol>
+          </div>
         </div>
 
         <!-- Interactive Canvas Stage Card -->
