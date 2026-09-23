@@ -306,12 +306,17 @@
       worldYMin = -Math.max(marginY * 0.5, 0.3);
       worldYMax = objMaxY + Math.max(marginY, 0.5);
 
-      // Enforce minimum vertical space so figures / annotations are legible
+      // Custom tuned bounds for sports inquiry scenarios
       if (pType === "tennis") {
-        worldYMax = Math.max(worldYMax, 8.0);   // tennis: 8m tall world minimum
-        worldXMax = Math.max(worldXMax, xLand + 3);
+        worldXMin = -2.5;
+        worldXMax = Math.max(32.0, xLand + 3.0);
+        worldYMin = -0.5;
+        worldYMax = 4.5;
       } else if (pType === "soccer") {
-        worldYMax = Math.max(worldYMax, 12.0);  // soccer: 12m tall world minimum
+        worldXMin = -4.0;
+        worldXMax = Math.max(54.0, xLand + 4.0);
+        worldYMin = -0.8;
+        worldYMax = Math.max(maxH * 1.35, 10.0);
       }
     } else if (state.mode === "sandbox") {
       const sb = state.sandbox;
@@ -443,6 +448,7 @@
 
     } else if (state.mode === "classroom") {
       const cp = state.classroom;
+      const isBuilding = (cp.problemType === "cliff-building");
       const trajRes = ProjectilesPhysics.generateTrajectory({
         x0: cp.x0,
         y0: cp.y0,
@@ -450,7 +456,7 @@
         thetaDeg: cp.thetaDeg,
         g: cp.g,
         groundY: 0,
-        obstacle: { x1: cp.x1, x2: cp.x2, height: cp.bldgHeight },
+        obstacle: isBuilding ? { x1: cp.x1, x2: cp.x2, height: cp.bldgHeight } : null,
         dt: 0.02,
         maxT: 25
       });
@@ -624,101 +630,127 @@
         }
 
       } else if (pType === "tennis") {
-        // Tennis: use analytical landing time for precise clamping
-        const netX = cp.x1;       // 12.0 m
-        const netH = cp.bldgHeight; // 0.92 m
-        const serviceLine = cp.x2; // 18.4 m
+        const netX = 12.0;
+        const netH = 0.92;
+        const serviceLine = 18.4;
         const decomp2 = ProjectilesPhysics.decomposeVelocity(cp.v0, cp.thetaDeg);
         const tNet = decomp2.vx > 0 ? (netX - cp.x0) / decomp2.vx : 9999;
         const yAtNet = cp.y0 + decomp2.vy * tNet - 0.5 * cp.g * tNet * tNet;
 
-        // Phase 1: check net crossing for pedagogical freeze-frame
-        if (!state.hasEnded && !cp._pausedAtNet && t >= tNet) {
-          cp._pausedAtNet = true;
+        // Phase 1: Pedagogical pause when reaching net at x = 12.0m
+        if (!state.hasEnded && !cp._hasReachedNet && t >= tNet) {
+          cp._hasReachedNet = true;
+          state.simTime = tNet;
+          cp.projPos = { x: netX, y: Math.max(0, yAtNet) };
+          const vel = ProjectilesPhysics.getVelocityAtTime({ vx: decomp2.vx, vy: decomp2.vy, g: cp.g, t: tNet });
+
           if (yAtNet <= netH) {
-            // Hit the net
             state.hasEnded = true;
             sfx.playMiss();
-            setBanner("miss", "NET FAULT", `Ball hit the net! Height at net: ${yAtNet.toFixed(2)}m < ${netH}m.`);
+            setBanner("miss", "FAULT (NET)", `Ball struck net at x = 12.0m (height y = ${Math.max(0, yAtNet).toFixed(2)}m ≤ 0.92m). Impact velocity = ${vel.speed.toFixed(1)} m/s.`);
             logTrial("Classroom", cp.v0, cp.thetaDeg, tNet, netX, yAtNet, "NET HIT");
             pauseSimulation();
+            updateTelemetryHUD();
+            return;
           } else {
-            // Clears net — freeze for 1.2s so student can read clearance badge
+            // Cleared net! Pause so students and teacher can examine clearance
+            sfx.playHit();
             const marginStr = (yAtNet - netH).toFixed(2);
-            setBanner("running", "NET CLEARED ✓", `Ball at net: y = ${yAtNet.toFixed(2)}m — clears by +${marginStr}m!`);
+            setBanner("hit", "NET TRANSIT (x = 12.0m)", `🎾 Ball cleared net! Height y = ${yAtNet.toFixed(2)}m (+${marginStr}m margin over 0.92m net). Click "Resume" to watch court landing.`);
             pauseSimulation();
-            // Auto-resume after 1.2s to show landing
-            setTimeout(() => {
-              if (!state.hasEnded && state.isPaused) {
-                cp._pausedAtNet = false;
-                resumeSimulation();
-              }
-            }, 1200);
+            updateTelemetryHUD();
+            return;
           }
         }
 
-        // Phase 2: ground landing check (run after net pause is cleared)
-        if (!state.hasEnded && cp._pausedAtNet !== true && pos.y <= 0) {
+        // Phase 2: Ground landing on tennis court
+        const disc2 = decomp2.vy * decomp2.vy + 2 * cp.g * cp.y0;
+        const tLand = disc2 >= 0 ? (decomp2.vy + Math.sqrt(disc2)) / cp.g : 9999;
+        const xLand = cp.x0 + decomp2.vx * tLand;
+
+        if (!state.hasEnded && (t >= tLand || pos.y <= 0)) {
           state.hasEnded = true;
-          // Clamp to exact landing position
-          const disc2 = decomp2.vy * decomp2.vy + 2 * cp.g * cp.y0;
-          const tLand = disc2 >= 0 ? (decomp2.vy + Math.sqrt(disc2)) / cp.g : t;
-          const xLand = cp.x0 + decomp2.vx * tLand;
-          cp.projPos = { x: xLand, y: 0 };
           state.simTime = tLand;
-          const inService = xLand <= serviceLine;
-          sfx.playHit();
-          if (inService) {
-            setBanner("hit", "GOOD SERVE!", `Lands at x = ${xLand.toFixed(2)}m — inside service box (≤ ${serviceLine}m)!`);
+          cp.projPos = { x: xLand, y: 0 };
+          const vel = ProjectilesPhysics.getVelocityAtTime({ vx: decomp2.vx, vy: decomp2.vy, g: cp.g, t: tLand });
+
+          if (xLand > serviceLine) {
+            sfx.playMiss();
+            const pastLine = (xLand - serviceLine).toFixed(1);
+            setBanner("miss", "FAULT (LONG)", `Ball lands long at x = ${xLand.toFixed(1)}m (+${pastLine}m past 18.4m service line)! Final impact velocity = ${vel.speed.toFixed(1)} m/s.`);
+            logTrial("Classroom", cp.v0, cp.thetaDeg, tLand, xLand, 0, "FAULT LONG");
+          } else if (xLand > netX) {
+            sfx.playHit();
+            setBanner("hit", "GOOD SERVE!", `Perfect serve! Lands in service court at x = ${xLand.toFixed(1)}m (≤ 18.4m). Final impact velocity = ${vel.speed.toFixed(1)} m/s.`);
             logTrial("Classroom", cp.v0, cp.thetaDeg, tLand, xLand, 0, "GOOD SERVE");
           } else {
-            setBanner("miss", "FAULT — LONG", `Lands at x = ${xLand.toFixed(2)}m — ${(xLand - serviceLine).toFixed(2)}m past the ${serviceLine}m service line!`);
-            logTrial("Classroom", cp.v0, cp.thetaDeg, tLand, xLand, 0, "FAULT LONG");
+            sfx.playMiss();
+            setBanner("miss", "FAULT (SHORT)", `Landed short of net at x = ${xLand.toFixed(1)}m.`);
+            logTrial("Classroom", cp.v0, cp.thetaDeg, tLand, xLand, 0, "SHORT");
           }
           pauseSimulation();
+          updateTelemetryHUD();
+          return;
         }
 
       } else if (pType === "soccer") {
-        // Soccer: goal-wall + ground landing with exact clamping
-        const goalX = cp.x1;     // 49.0 m
-        const goalH = cp.bldgHeight; // 2.44 m
+        const wallX = 9.15;
+        const wallH = 2.00;
+        const goalX = 49.0;
         const decomp3 = ProjectilesPhysics.decomposeVelocity(cp.v0, cp.thetaDeg);
+        const tWall = decomp3.vx > 0 ? (wallX - cp.x0) / decomp3.vx : 9999;
+        const yAtWall = cp.y0 + decomp3.vy * tWall - 0.5 * cp.g * tWall * tWall;
 
-        // Clamp to exact ground time to avoid overshooting
-        const discS = decomp3.vy * decomp3.vy + 2 * cp.g * cp.y0;
-        const tGround = discS >= 0 ? (decomp3.vy + Math.sqrt(discS)) / cp.g : 9999;
+        // Phase 1: Pedagogical pause when reaching defensive wall at x = 9.15m
+        if (!state.hasEnded && !cp._hasReachedWall && t >= tWall) {
+          cp._hasReachedWall = true;
+          state.simTime = tWall;
+          cp.projPos = { x: wallX, y: Math.max(0, yAtWall) };
+          const vel = ProjectilesPhysics.getVelocityAtTime({ vx: decomp3.vx, vy: decomp3.vy, g: cp.g, t: tWall });
 
-        // Exact position at ground landing
-        const xAtGround = cp.x0 + decomp3.vx * tGround;
+          if (yAtWall <= wallH) {
+            state.hasEnded = true;
+            sfx.playMiss();
+            setBanner("miss", "WALL BLOCKED", `Kick blocked by 2.0m defensive wall at x = 9.15m (height y = ${Math.max(0, yAtWall).toFixed(2)}m). Impact velocity = ${vel.speed.toFixed(1)} m/s.`);
+            logTrial("Classroom", cp.v0, cp.thetaDeg, tWall, wallX, yAtWall, "WALL BLOCKED");
+            pauseSimulation();
+            updateTelemetryHUD();
+            return;
+          } else {
+            // Cleared wall! Pause so students and teacher can examine wall clearance
+            sfx.playHit();
+            const wallMargin = (yAtWall - wallH).toFixed(2);
+            setBanner("hit", "WALL CLEARED (x = 9.15m)", `⚽ Ball cleared 2.0m defensive wall at height y = ${yAtWall.toFixed(2)}m (+${wallMargin}m margin)! Click "Resume" to watch flight to goal.`);
+            pauseSimulation();
+            updateTelemetryHUD();
+            return;
+          }
+        }
 
-        if (!state.hasEnded && t >= tGround) {
+        // Phase 2: Ground landing / Goal line arrival
+        const disc3 = decomp3.vy * decomp3.vy + 2 * cp.g * cp.y0;
+        const tGround = disc3 >= 0 ? (decomp3.vy + Math.sqrt(disc3)) / cp.g : 9999;
+        const xGround = cp.x0 + decomp3.vx * tGround;
+
+        if (!state.hasEnded && (t >= tGround || pos.y <= 0)) {
           state.hasEnded = true;
           state.simTime = tGround;
-          cp.projPos = { x: xAtGround, y: 0 };
+          cp.projPos = { x: xGround, y: 0 };
+          const vel = ProjectilesPhysics.getVelocityAtTime({ vx: decomp3.vx, vy: decomp3.vy, g: cp.g, t: tGround });
 
-          // Check if ball lands on or past goal line
-          if (xAtGround >= goalX) {
-            // It reaches the goal — check height at goal x
-            const tAtGoal = decomp3.vx > 0 ? (goalX - cp.x0) / decomp3.vx : 0;
-            const yAtGoal = cp.y0 + decomp3.vy * tAtGoal - 0.5 * cp.g * tAtGoal * tAtGoal;
-            cp.projPos = { x: goalX, y: Math.max(0, yAtGoal) };
-            state.simTime = tAtGoal;
-
-            if (yAtGoal > goalH) {
-              sfx.playMiss();
-              setBanner("miss", "OVER THE CROSSBAR", `Ball height at goal: y = ${yAtGoal.toFixed(2)}m > ${goalH}m crossbar — no goal!`);
-              logTrial("Classroom", cp.v0, cp.thetaDeg, tAtGoal, goalX, yAtGoal, "OVER BAR");
-            } else {
-              sfx.playHit();
-              setBanner("hit", "GOAL! ⚽", `Ball enters goal at x = ${goalX.toFixed(0)}m, height = ${Math.max(0,yAtGoal).toFixed(2)}m!`);
-              logTrial("Classroom", cp.v0, cp.thetaDeg, tAtGoal, goalX, Math.max(0, yAtGoal), "GOAL");
-            }
+          if (xGround >= goalX - 1.0) {
+            // In Problem 48: range R = 48.98m ≈ 49.0m, lands right on goal line!
+            sfx.playHit();
+            setBanner("hit", "PITCH LANDING / GOAL! ⚽", `Ball lands at goal line (x = ${xGround.toFixed(1)}m) after t = ${tGround.toFixed(2)}s flight! Final impact velocity = ${vel.speed.toFixed(1)} m/s.`);
+            logTrial("Classroom", cp.v0, cp.thetaDeg, tGround, xGround, 0, "GOAL HIT");
           } else {
             sfx.playMiss();
-            setBanner("miss", "LANDS SHORT", `Ball lands at x = ${xAtGround.toFixed(1)}m — ${(goalX - xAtGround).toFixed(1)}m short of the goal!`);
-            logTrial("Classroom", cp.v0, cp.thetaDeg, tGround, xAtGround, 0, "SHORT");
+            setBanner("miss", "PITCH IMPACT", `Ball landed on pitch at x = ${xGround.toFixed(1)}m short of goal. Final impact velocity = ${vel.speed.toFixed(1)} m/s.`);
+            logTrial("Classroom", cp.v0, cp.thetaDeg, tGround, xGround, 0, "PITCH HIT");
           }
           pauseSimulation();
+          updateTelemetryHUD();
+          return;
         }
 
       } else {
@@ -2036,147 +2068,276 @@
     ctx.fill();
   }
 
-  // ── Tennis Server Stick Figure ──────────────────────────────────────────────
-  // baseX/baseY = screen coords of player's feet, contactY = screen y of serve contact point
-  function drawTennisServerFigure(baseX, baseY, contactY) {
-    const h = baseY - contactY; // screen height of server (pixels)
-    const torsoH = h * 0.42;
-    const legH = h * 0.45;
-    const headR = Math.max(6, h * 0.085);
-
+  // ── High-Quality Sports Ball Sprites ──────────────────────────────────────────
+  function drawTennisBallSprite(ctx, cx, cy, rot = 0) {
+    const r = 7.5;
     ctx.save();
-    ctx.strokeStyle = "#095f76";
-    ctx.lineWidth = 3;
+    ctx.translate(cx, cy);
+    if (rot) ctx.rotate(rot);
+
+    // Subtle drop shadow
+    ctx.shadowColor = "rgba(0, 0, 0, 0.25)";
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 2;
+
+    // Ball Body - Optic Yellow Radial Gradient
+    const grad = ctx.createRadialGradient(-2, -2, 1, 0, 0, r);
+    grad.addColorStop(0, "#effb65");
+    grad.addColorStop(0.65, "#cbe035");
+    grad.addColorStop(1, "#98b015");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Turn off shadow for seams
+    ctx.shadowColor = "transparent";
+
+    // Crisp white curved parabolic tennis seams
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+    ctx.lineWidth = 1.3;
     ctx.lineCap = "round";
 
-    // Legs
+    // Left curved seam arc
     ctx.beginPath();
-    ctx.moveTo(baseX, baseY);
-    ctx.lineTo(baseX - 6, baseY - legH);  // left leg
-    ctx.moveTo(baseX, baseY);
-    ctx.lineTo(baseX + 6, baseY - legH);  // right leg (slight stance)
+    ctx.arc(-4.5, 0, 4.8, -Math.PI * 0.42, Math.PI * 0.42);
     ctx.stroke();
 
-    // Body
-    const hipY = baseY - legH;
-    const shoulderY = hipY - torsoH;
+    // Right curved seam arc
     ctx.beginPath();
-    ctx.moveTo(baseX, hipY);
-    ctx.lineTo(baseX, shoulderY);
+    ctx.arc(4.5, 0, 4.8, Math.PI * 0.58, Math.PI * 1.42);
     ctx.stroke();
 
-    // Left arm (hanging slightly)
+    // Thin outer rim
+    ctx.strokeStyle = "rgba(70, 95, 10, 0.35)";
+    ctx.lineWidth = 0.75;
     ctx.beginPath();
-    ctx.moveTo(baseX, shoulderY);
-    ctx.lineTo(baseX - 10, shoulderY + h * 0.12);
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Right arm: raised — serving arm up toward contact point
-    ctx.strokeStyle = "#d67b19";
+    ctx.restore();
+  }
+
+  function drawSoccerBallSprite(ctx, cx, cy, rot = 0) {
+    const r = 8.5;
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (rot) ctx.rotate(rot);
+
+    // Drop shadow
+    ctx.shadowColor = "rgba(0, 0, 0, 0.25)";
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 2;
+
+    // White leather sphere with shading
+    const grad = ctx.createRadialGradient(-2.5, -2.5, 1, 0, 0, r);
+    grad.addColorStop(0, "#ffffff");
+    grad.addColorStop(0.7, "#f0f4f6");
+    grad.addColorStop(1, "#c8d4da");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.shadowColor = "transparent";
+
+    // Outer rim
+    ctx.strokeStyle = "#123140";
+    ctx.lineWidth = 1.0;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Center pentagon patch
+    ctx.fillStyle = "#123140";
+    ctx.beginPath();
+    const pentaR = 3.2;
+    for (let i = 0; i < 5; i++) {
+      const a = (i * 2 * Math.PI / 5) - Math.PI / 2;
+      const px = Math.cos(a) * pentaR;
+      const py = Math.sin(a) * pentaR;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Radial seam stitches from pentagon vertices to edge
+    ctx.strokeStyle = "rgba(18, 49, 64, 0.75)";
+    ctx.lineWidth = 0.8;
+    for (let i = 0; i < 5; i++) {
+      const a = (i * 2 * Math.PI / 5) - Math.PI / 2;
+      const px = Math.cos(a) * pentaR;
+      const py = Math.sin(a) * pentaR;
+      const ex = Math.cos(a) * (r - 0.5);
+      const ey = Math.sin(a) * (r - 0.5);
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  // ── Tennis Server Figure ───────────────────────────────────────────────────
+  // baseX/baseY = player feet on court, contactY = serve contact height on screen
+  function drawTennisServerFigure(baseX, baseY, contactY) {
+    const h = baseY - contactY; // screen height (2.5m)
+    const bodyH = Math.max(h * 0.70, 36);
+    const hipY = baseY - bodyH * 0.44;
+    const shoulderY = baseY - bodyH * 0.80;
+    const headR = Math.max(bodyH * 0.09, 5);
+
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    // Shoes on baseline
+    ctx.fillStyle = "#123140";
+    ctx.fillRect(baseX - 9, baseY - 3, 8, 3);
+    ctx.fillRect(baseX + 2, baseY - 3, 8, 3);
+
+    // Legs in athletic service stance
+    ctx.strokeStyle = "#095f76";
     ctx.lineWidth = 3.5;
     ctx.beginPath();
-    ctx.moveTo(baseX, shoulderY);
-    ctx.lineTo(baseX + 8, contactY + 6);   // wrist near contact height
+    ctx.moveTo(baseX - 5, baseY - 3);
+    ctx.lineTo(baseX - 3, hipY);
+    ctx.moveTo(baseX + 6, baseY - 3);
+    ctx.lineTo(baseX + 1, hipY);
     ctx.stroke();
 
-    // Racket head (oval at contact point)
-    ctx.save();
-    ctx.translate(baseX + 10, contactY + 2);
-    ctx.rotate(-0.3);
-    ctx.strokeStyle = "#d67b19";
-    ctx.lineWidth = 2;
+    // Shorts
+    ctx.strokeStyle = "#0f7e9b";
+    ctx.lineWidth = 4.5;
     ctx.beginPath();
-    ctx.ellipse(0, 0, 7, 10, 0, 0, Math.PI * 2);
+    ctx.moveTo(baseX - 3, hipY + 5);
+    ctx.lineTo(baseX - 1, hipY);
+    ctx.lineTo(baseX + 2, hipY + 5);
     ctx.stroke();
-    // Racket strings cross
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = "rgba(214,123,25,0.5)";
-    ctx.beginPath();
-    ctx.moveTo(-6, 0); ctx.lineTo(6, 0);
-    ctx.moveTo(0, -9); ctx.lineTo(0, 9);
-    ctx.stroke();
-    ctx.restore();
 
-    // Contact point dot (ball position)
-    ctx.fillStyle = "#d67b19";
+    // Torso arched in serve stretch
+    ctx.strokeStyle = "#0f7e9b";
+    ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.arc(baseX + 10, contactY, 5, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(baseX - 1, hipY);
+    ctx.lineTo(baseX - 2, shoulderY);
+    ctx.stroke();
 
     // Head
-    ctx.fillStyle = "#095f76";
+    ctx.fillStyle = "#123140";
     ctx.beginPath();
-    ctx.arc(baseX, shoulderY - headR, headR, 0, Math.PI * 2);
+    ctx.arc(baseX - 2, shoulderY - headR - 2, headR, 0, Math.PI * 2);
     ctx.fill();
+
+    // Left arm (tucked after toss)
+    ctx.strokeStyle = "#095f76";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(baseX - 2, shoulderY);
+    ctx.lineTo(baseX - 12, shoulderY + 8);
+    ctx.stroke();
+
+    // Serving arm extended up to racket
+    ctx.strokeStyle = "#095f76";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(baseX - 2, shoulderY);
+    ctx.lineTo(baseX, contactY + 16);
+    ctx.stroke();
+
+    // Tennis Racket
+    ctx.strokeStyle = "#123140";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(baseX, contactY + 16);
+    ctx.lineTo(baseX, contactY + 9);
+    ctx.stroke();
+
+    // Oval racket head centered exactly at (baseX, contactY)
+    ctx.strokeStyle = "#0f7e9b";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(baseX, contactY, 8, 11, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Racket string crosshairs
+    ctx.strokeStyle = "rgba(15, 126, 155, 0.4)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(baseX - 6, contactY);
+    ctx.lineTo(baseX + 6, contactY);
+    ctx.moveTo(baseX, contactY - 8);
+    ctx.lineTo(baseX, contactY + 8);
+    ctx.stroke();
 
     ctx.restore();
   }
 
   // ── Soccer Player Kick Figure ───────────────────────────────────────────────
-  // baseX/baseY = feet position; angleDeg = launch angle
   function drawSoccerPlayerFigure(baseX, baseY, angleDeg) {
-    const H = 32;  // figure height in pixels (fixed scale)
-    ctx.save();
-    ctx.strokeStyle = "#095f76";
-    ctx.lineWidth = 3;
-    ctx.lineCap = "round";
-
-    const shoulderY = baseY - H * 0.78;
+    const H = 36;
     const hipY = baseY - H * 0.45;
+    const shoulderY = baseY - H * 0.82;
+    const headR = 5.5;
 
-    // Support leg (straight)
-    ctx.beginPath();
-    ctx.moveTo(baseX - 4, baseY);
-    ctx.lineTo(baseX - 2, hipY);
-    ctx.stroke();
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
 
-    // Kicking leg: angled forward at launch angle
-    const kickAng = (-angleDeg * Math.PI / 180);  // canvas angles: up = negative y
-    const kickLen = H * 0.45;
-    ctx.strokeStyle = "#d67b19";
+    // Plant foot (left)
+    ctx.fillStyle = "#123140";
+    ctx.fillRect(baseX - 15, baseY - 3, 9, 3);
+
+    // Plant leg
+    ctx.strokeStyle = "#095f76";
     ctx.lineWidth = 3.5;
     ctx.beginPath();
-    ctx.moveTo(baseX - 2, hipY);
-    ctx.lineTo(baseX - 2 + Math.cos(kickAng) * kickLen,
-               hipY - Math.sin(-kickAng) * kickLen);
+    ctx.moveTo(baseX - 10, baseY - 3);
+    ctx.lineTo(baseX - 6, hipY);
     ctx.stroke();
 
-    // Body
-    ctx.strokeStyle = "#095f76";
-    ctx.lineWidth = 3;
+    // Torso leaning forward into free kick
+    ctx.strokeStyle = "#0f7e9b";
+    ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(baseX - 2, hipY);
-    ctx.lineTo(baseX, shoulderY);
-    ctx.stroke();
-
-    // Arms
-    ctx.beginPath();
-    ctx.moveTo(baseX, shoulderY);
-    ctx.lineTo(baseX - 12, shoulderY + H * 0.12);  // left arm back for balance
-    ctx.moveTo(baseX, shoulderY);
-    ctx.lineTo(baseX + 10, shoulderY + H * 0.08);  // right arm forward
+    ctx.moveTo(baseX - 6, hipY);
+    ctx.lineTo(baseX - 2, shoulderY);
     ctx.stroke();
 
     // Head
-    ctx.fillStyle = "#095f76";
-    ctx.beginPath();
-    ctx.arc(baseX, shoulderY - 7, 6, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Soccer ball at feet
-    const ballX = baseX + 5;
-    const ballY = baseY - 5;
-    ctx.beginPath();
-    ctx.arc(ballX, ballY, 5.5, 0, Math.PI * 2);
-    ctx.fillStyle = "#ffffff";
-    ctx.fill();
-    ctx.strokeStyle = "#123140";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    // Pentagon patch
     ctx.fillStyle = "#123140";
     ctx.beginPath();
-    ctx.arc(ballX, ballY, 2.5, 0, Math.PI * 2);
+    ctx.arc(baseX - 2, shoulderY - headR - 2, headR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Balancing arms
+    ctx.strokeStyle = "#095f76";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(baseX - 2, shoulderY);
+    ctx.lineTo(baseX - 14, shoulderY + 8);
+    ctx.moveTo(baseX - 2, shoulderY);
+    ctx.lineTo(baseX + 10, shoulderY + 6);
+    ctx.stroke();
+
+    // Kicking leg: swings through toward ball at launch angle
+    const rad = (-angleDeg * Math.PI / 180);
+    const kickLen = H * 0.46;
+    ctx.strokeStyle = "#d67b19";
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.moveTo(baseX - 6, hipY);
+    ctx.lineTo(baseX - 4 + Math.cos(rad) * kickLen, hipY - Math.sin(-rad) * kickLen);
+    ctx.stroke();
+
+    // Kicking boot striking behind ball
+    ctx.fillStyle = "#123140";
+    ctx.beginPath();
+    ctx.arc(baseX - 4 + Math.cos(rad) * kickLen, hipY - Math.sin(-rad) * kickLen, 3, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
@@ -2515,6 +2676,50 @@
       ctx.font = "bold 10px Inter, sans-serif";
       ctx.fillText("WALL (9.15m)", wallPt.x - 20, wallTop.y - 14);
 
+      // Wall clearance annotation when running, ended, or paused at wall
+      if (state.isRunning || state.hasEnded || cp._hasReachedWall) {
+        const decompS = ProjectilesPhysics.decomposeVelocity(cp.v0, cp.thetaDeg);
+        const tW = decompS.vx > 0 ? (wallX - cp.x0) / decompS.vx : 0;
+        const yW = cp.y0 + decompS.vy * tW - 0.5 * cp.g * tW * tW;
+        const clearsWall = yW > 2.00;
+
+        const wallBallPt = worldToScreen(wallX, Math.max(0, yW), b);
+        const wallTopPt = worldToScreen(wallX, 2.00, b);
+
+        // Ghost ball at wall
+        ctx.beginPath();
+        ctx.arc(wallBallPt.x, wallBallPt.y, 6, 0, Math.PI * 2);
+        ctx.fillStyle = clearsWall ? "rgba(15,126,155,0.35)" : "rgba(200,50,50,0.35)";
+        ctx.fill();
+        ctx.strokeStyle = clearsWall ? "#0f7e9b" : "#c83232";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Vertical dimension bracket
+        ctx.strokeStyle = clearsWall ? "rgba(15,126,155,0.6)" : "rgba(200,50,50,0.6)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(wallBallPt.x + 10, wallTopPt.y);
+        ctx.lineTo(wallBallPt.x + 10, wallBallPt.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Tick marks
+        ctx.beginPath();
+        ctx.moveTo(wallBallPt.x + 6, wallTopPt.y);
+        ctx.lineTo(wallBallPt.x + 14, wallTopPt.y);
+        ctx.moveTo(wallBallPt.x + 6, wallBallPt.y);
+        ctx.lineTo(wallBallPt.x + 14, wallBallPt.y);
+        ctx.stroke();
+
+        // Clearance badge
+        ctx.fillStyle = clearsWall ? "#0f7e9b" : "#c83232";
+        ctx.font = "bold 10px Inter, sans-serif";
+        const wMargin = (yW - 2.00).toFixed(2);
+        ctx.fillText(`↕ ${clearsWall ? '+' : ''}${wMargin}m`, wallBallPt.x + 16, (wallTopPt.y + wallBallPt.y) / 2 + 4);
+      }
+
       // Goal at range ~49m
       const goalPt = worldToScreen(49.0, 0, b);
       const goalTop = worldToScreen(49.0, 2.44, b);
@@ -2752,6 +2957,10 @@
       ctx.lineTo(-13, 7);
       ctx.fill();
       ctx.restore();
+    } else if (state.mode === "classroom" && state.classroom.problemType === "tennis") {
+      drawTennisBallSprite(ctx, scrPt.x, scrPt.y, state.simTime * 12);
+    } else if (state.mode === "classroom" && state.classroom.problemType === "soccer") {
+      drawSoccerBallSprite(ctx, scrPt.x, scrPt.y, state.simTime * 8);
     } else {
       ctx.fillStyle = "#d67b19";
       ctx.beginPath();
@@ -2899,16 +3108,9 @@
       });
 
     } else if (state.mode === "classroom") {
+      btnQuickModeAction.style.display = "none";
+
       const curType = state.classroom.problemType || "cliff-building";
-      const notesLabels = {
-        "cliff-building": "🏔️ Notes: Cliff & Building",
-        "cliff-100m":     "⛰️ Notes: 100m Cliff",
-        "soccer":         "⚽ Notes: Soccer Kick",
-        "tennis":         "🎾 Notes: Tennis Serve",
-        "box-drop":       "📦 Notes: Box Roll-Off"
-      };
-      btnQuickModeAction.innerHTML = `<span></span> ${notesLabels[curType] || "📋 Notes"}`;
-      btnQuickModeAction.style.display = "inline-flex";
 
       addPresetPill("🏔️ Lecture Notes: 320m Cliff & 70m Building", curType === "cliff-building", () => {
         state.classroom.problemType = "cliff-building";
@@ -2919,6 +3121,7 @@
         state.classroom.x2 = 310;
         state.classroom.bldgHeight = 70;
         state.classroom.g = 10.0;
+        updateClassroomParamControls("cliff-building");
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("classroom", "cliff-building");
@@ -2934,6 +3137,7 @@
         state.classroom.x2 = 0.0;
         state.classroom.bldgHeight = 0.0;
         state.classroom.g = 9.8;
+        updateClassroomParamControls("cliff-100m");
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("classroom", "cliff-100m");
@@ -2949,6 +3153,7 @@
         state.classroom.x2 = 52.0;
         state.classroom.bldgHeight = 2.44;
         state.classroom.g = 9.8;
+        updateClassroomParamControls("soccer");
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("classroom", "soccer");
@@ -2964,6 +3169,7 @@
         state.classroom.x2 = 18.4;
         state.classroom.bldgHeight = 0.92;
         state.classroom.g = 9.8;
+        updateClassroomParamControls("tennis");
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("classroom", "tennis");
@@ -2979,11 +3185,15 @@
         state.classroom.x2 = 0.0;
         state.classroom.bldgHeight = 0.0;
         state.classroom.g = 9.8;
+        updateClassroomParamControls("box-drop");
         syncSliders();
         resetSimulation();
         updateInquiryScenarioCard("classroom", "box-drop");
         updatePredictionQuiz();
       });
+
+      // Synchronize parameter controls for the current classroom problem
+      updateClassroomParamControls(curType);
 
     } else {
       btnQuickModeAction.style.display = "none";
@@ -3023,6 +3233,95 @@
     presetPillsContainer.appendChild(btn);
   }
 
+  function updateClassroomParamControls(pType) {
+    const lblV0 = document.getElementById("labelClassV0");
+    const lblAngle = document.getElementById("labelClassAngle");
+    const lblCliffH = document.getElementById("labelClassCliffH");
+    const inV0 = document.getElementById("classV0");
+    const inAngle = document.getElementById("classAngle");
+    const inCliffH = document.getElementById("classCliffH");
+    const obstGroup = document.getElementById("classObstacleGroup");
+    const specsCard = document.getElementById("classScenarioSpecsCard");
+
+    if (!lblV0 || !lblAngle || !lblCliffH || !inV0 || !inAngle || !inCliffH) return;
+
+    if (pType === "tennis") {
+      lblV0.innerHTML = `Serve Speed (<span class="math-expr">v<sub>0</sub></span>):`;
+      inV0.min = "20"; inV0.max = "60"; inV0.step = "0.5";
+      lblAngle.innerHTML = `Serve Angle (<span class="math-expr">θ</span>):`;
+      inAngle.min = "-5"; inAngle.max = "15"; inAngle.step = "0.5";
+      lblCliffH.innerHTML = `Serve Contact Height (<span class="math-expr">h<sub>0</sub></span>):`;
+      inCliffH.min = "1.5"; inCliffH.max = "3.5"; inCliffH.step = "0.05";
+      if (obstGroup) obstGroup.style.display = "none";
+      if (specsCard) {
+        specsCard.style.display = "block";
+        specsCard.innerHTML = `
+          <strong>🎾 Regulation Tennis Court Specifications:</strong><br>
+          • <strong>Net:</strong> Distance <span class="math-expr">x = 12.0 m</span> · Height <span class="math-expr">h = 0.92 m</span> (at center)<br>
+          • <strong>Service Line:</strong> Boundary <span class="math-expr">x = 18.4 m</span> from baseline (<span class="math-expr">12.0 + 6.4 m</span>)<br>
+          • <strong>Flat Serve Rule:</strong> Must clear the net (<span class="math-expr">y &gt; 0.92 m</span>) and land before the service line (<span class="math-expr">x ≤ 18.4 m</span>).
+        `;
+      }
+    } else if (pType === "soccer") {
+      lblV0.innerHTML = `Kick Speed (<span class="math-expr">v<sub>0</sub></span>):`;
+      inV0.min = "10"; inV0.max = "40"; inV0.step = "0.1";
+      lblAngle.innerHTML = `Launch Angle (<span class="math-expr">θ</span>):`;
+      inAngle.min = "15"; inAngle.max = "60"; inAngle.step = "0.5";
+      lblCliffH.innerHTML = `Pitch Elevation (<span class="math-expr">h<sub>0</sub></span>):`;
+      inCliffH.min = "0"; inCliffH.max = "5"; inCliffH.step = "0.1";
+      if (obstGroup) obstGroup.style.display = "none";
+      if (specsCard) {
+        specsCard.style.display = "block";
+        specsCard.innerHTML = `
+          <strong>⚽ Free Kick Pitch Specifications:</strong><br>
+          • <strong>Defensive Wall:</strong> Distance <span class="math-expr">x = 9.15 m</span> (10 yards) · Wall height <span class="math-expr">2.00 m</span><br>
+          • <strong>Goal Target:</strong> Distance <span class="math-expr">x = 49.0 m</span> · Crossbar height <span class="math-expr">2.44 m</span> (8 ft)<br>
+          • <strong>Velocity Components:</strong> <span class="math-expr">v_x = 20.0 m/s</span> · <span class="math-expr">v_y = 12.0 m/s</span> (<span class="math-expr">v_0 = 23.3 m/s</span> at <span class="math-expr">θ = 31.0°</span>).
+        `;
+      }
+    } else if (pType === "box-drop") {
+      lblV0.innerHTML = `Roll-Off Speed (<span class="math-expr">v<sub>0</sub></span>):`;
+      inV0.min = "1"; inV0.max = "20"; inV0.step = "0.5";
+      lblAngle.innerHTML = `Roll-Off Angle (<span class="math-expr">θ</span>):`;
+      inAngle.min = "0"; inAngle.max = "0"; inAngle.step = "0";
+      lblCliffH.innerHTML = `Tabletop Height (<span class="math-expr">h<sub>0</sub></span>):`;
+      inCliffH.min = "0.5"; inCliffH.max = "10"; inCliffH.step = "0.1";
+      if (obstGroup) obstGroup.style.display = "none";
+      if (specsCard) {
+        specsCard.style.display = "block";
+        specsCard.innerHTML = `
+          <strong>📦 Problem 46 Tabletop Specifications:</strong><br>
+          • Table height <span class="math-expr">h_0 = 2.0 m</span> · Horizontal roll-off <span class="math-expr">v_0 = 5.0 m/s</span> (<span class="math-expr">θ = 0°</span>).
+        `;
+      }
+    } else if (pType === "cliff-100m") {
+      lblV0.innerHTML = `Launch Speed (<span class="math-expr">v<sub>0</sub></span>):`;
+      inV0.min = "10"; inV0.max = "120"; inV0.step = "0.5";
+      lblAngle.innerHTML = `Launch Angle (<span class="math-expr">θ</span>):`;
+      inAngle.min = "0"; inAngle.max = "0"; inAngle.step = "0";
+      lblCliffH.innerHTML = `Cliff Height (<span class="math-expr">h<sub>0</sub></span>):`;
+      inCliffH.min = "10"; inCliffH.max = "200"; inCliffH.step = "1";
+      if (obstGroup) obstGroup.style.display = "none";
+      if (specsCard) {
+        specsCard.style.display = "block";
+        specsCard.innerHTML = `
+          <strong>⛰️ Problem 47 Specifications:</strong><br>
+          • 100m elevated cliff · Horizontal launch (<span class="math-expr">θ = 0°</span>) · Ground target <span class="math-expr">x = 300 m</span>.
+        `;
+      }
+    } else {
+      // Default: cliff-building
+      lblV0.innerHTML = `Launch Speed (<span class="math-expr">v<sub>0</sub></span>):`;
+      inV0.min = "1"; inV0.max = "100"; inV0.step = "0.5";
+      lblAngle.innerHTML = `Angle (<span class="math-expr">θ</span>):`;
+      inAngle.min = "0"; inAngle.max = "85"; inAngle.step = "0.5";
+      lblCliffH.innerHTML = `Platform / Launch Height (<span class="math-expr">h<sub>0</sub></span>):`;
+      inCliffH.min = "0"; inCliffH.max = "400"; inCliffH.step = "1";
+      if (obstGroup) obstGroup.style.display = "block";
+      if (specsCard) specsCard.style.display = "none";
+    }
+  }
+
   function syncSliders() {
     if (state.mode === "monkey") {
       const m = state.monkey;
@@ -3056,9 +3355,9 @@
       document.getElementById("classAngle").value = cp.thetaDeg;
       document.getElementById("classAngleVal").textContent = cp.thetaDeg.toFixed(1) + "°";
       document.getElementById("classCliffH").value = cp.y0;
-      document.getElementById("classCliffHVal").textContent = cp.y0.toFixed(0) + " m";
+      document.getElementById("classCliffHVal").textContent = cp.y0.toFixed(cp.y0 % 1 === 0 ? 0 : 2) + " m";
       document.getElementById("classBldgH").value = cp.bldgHeight;
-      document.getElementById("classBldgHVal").textContent = cp.bldgHeight.toFixed(0) + " m";
+      document.getElementById("classBldgHVal").textContent = cp.bldgHeight.toFixed(cp.bldgHeight % 1 === 0 ? 0 : 2) + " m";
       document.getElementById("classBldgX1").value = cp.x1;
       document.getElementById("classBldgX1Val").textContent = cp.x1.toFixed(0) + " m";
       document.getElementById("classBldgW").value = cp.x2 - cp.x1;
@@ -3150,6 +3449,13 @@
       const dLauncher = Math.hypot(sx - lScreen.x, sy - lScreen.y);
 
       if (dLauncher <= 75) {
+        if (state.mode === "classroom") {
+          const cpType = state.classroom.problemType || "cliff-building";
+          if (cpType === "tennis" || cpType === "box-drop" || cpType === "cliff-100m") {
+            // Angle is locked to 0° for these horizontal packet problems
+            return;
+          }
+        }
         activeDrag = "cannonAngle";
         canvas.style.cursor = "grabbing";
         if (e.preventDefault) e.preventDefault();
@@ -3193,8 +3499,18 @@
         const dLauncher = Math.hypot(sx - lScreen.x, sy - lScreen.y);
 
         if (dLauncher <= 75) {
-          canvas.style.cursor = "grab";
-          return;
+          if (state.mode === "classroom") {
+            const cpType = state.classroom.problemType || "cliff-building";
+            if (cpType === "tennis" || cpType === "box-drop" || cpType === "cliff-100m") {
+              // Not draggable
+            } else {
+              canvas.style.cursor = "grab";
+              return;
+            }
+          } else {
+            canvas.style.cursor = "grab";
+            return;
+          }
         }
         if (state.mode === "monkey") {
           const m = state.monkey;
@@ -3764,12 +4080,22 @@
       resetSimulation();
     });
 
-    bindSlider("classV0", "classV0Val", state.classroom, "v0", "m/s", 0);
-    bindSlider("classAngle", "classAngleVal", state.classroom, "thetaDeg", "°", 0);
-    bindSlider("classCliffH", "classCliffHVal", state.classroom, "y0", "m", 0);
-    bindSlider("classBldgH", "classBldgHVal", state.classroom, "bldgHeight", "m", 0);
+    bindSlider("classV0", "classV0Val", state.classroom, "v0", "m/s", 1);
+    bindSlider("classAngle", "classAngleVal", state.classroom, "thetaDeg", "°", 1);
+    bindSlider("classCliffH", "classCliffHVal", state.classroom, "y0", "m", 2);
+    bindSlider("classBldgH", "classBldgHVal", state.classroom, "bldgHeight", "m", 2);
     bindSlider("classBldgX1", "classBldgX1Val", state.classroom, "x1", "m", 0);
-    bindSlider("classBldgW", "classBldgWVal", state.classroom, "bldgWidth", "m", 0);
+
+    const bldgWEl = document.getElementById("classBldgW");
+    if (bldgWEl) {
+      bldgWEl.addEventListener("input", (e) => {
+        const w = parseFloat(e.target.value);
+        state.classroom.x2 = state.classroom.x1 + w;
+        const disp = document.getElementById("classBldgWVal");
+        if (disp) disp.textContent = `${w.toFixed(0)} m`;
+        resetSimulation();
+      });
+    }
 
     const classGravEl = document.getElementById("classGravity");
     if (classGravEl) {

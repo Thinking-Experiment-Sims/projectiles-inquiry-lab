@@ -205,7 +205,7 @@
               <button type="button" class="btn btn-secondary" id="btnReset">
                 <span>🔄</span> Reset
               </button>
-              <button type="button" class="btn btn-teal" id="btnQuickModeAction">
+              <button type="button" class="btn btn-teal" id="btnQuickModeAction" style="display: none;">
                 <span>🎯</span> Auto-Aim Directly
               </button>
             </div>
@@ -389,53 +389,62 @@
             <div class="mode-controls-panel" id="controls-classroom" style="display: none;">
               <div class="param-grid">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
-                  <div class="param-item">
+                  <div class="param-item" id="paramRowClassV0">
                     <div class="param-label-row">
-                      <span>Launch Speed (<span class="math-expr">v<sub>0</sub></span>):</span>
+                      <span id="labelClassV0">Launch Speed (<span class="math-expr">v<sub>0</sub></span>):</span>
                       <span class="param-val-badge" id="classV0Val">42.0 m/s</span>
                     </div>
                     <input type="range" id="classV0" min="1" max="100" step="0.5" value="42.0" class="range-slider">
                   </div>
-                  <div class="param-item">
+                  <div class="param-item" id="paramRowClassAngle">
                     <div class="param-label-row">
-                      <span>Angle (<span class="math-expr">θ</span>):</span>
+                      <span id="labelClassAngle">Angle (<span class="math-expr">θ</span>):</span>
                       <span class="param-val-badge" id="classAngleVal">30.0°</span>
                     </div>
                     <input type="range" id="classAngle" min="0" max="85" step="0.5" value="30.0" class="range-slider">
                   </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
-                  <div class="param-item">
+                <div style="display: grid; grid-template-columns: 1fr; gap: 0.85rem;">
+                  <div class="param-item" id="paramRowClassCliffH">
                     <div class="param-label-row">
-                      <span>Platform / Launch Height (<span class="math-expr">h<sub>0</sub></span>):</span>
+                      <span id="labelClassCliffH">Platform / Launch Height (<span class="math-expr">h<sub>0</sub></span>):</span>
                       <span class="param-val-badge" id="classCliffHVal">320 m</span>
                     </div>
                     <input type="range" id="classCliffH" min="0" max="400" step="0.1" value="320" class="range-slider">
                   </div>
-                  <div class="param-item">
-                    <div class="param-label-row">
-                      <span>Obstacle / Net Height:</span>
-                      <span class="param-val-badge" id="classBldgHVal">70 m</span>
-                    </div>
-                    <input type="range" id="classBldgH" min="0" max="200" step="0.05" value="70" class="range-slider">
-                  </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
-                  <div class="param-item">
-                    <div class="param-label-row">
-                      <span>Obstacle Distance (<span class="math-expr">x<sub>1</sub></span>):</span>
-                      <span class="param-val-badge" id="classBldgX1Val">230 m</span>
+                <!-- Scenario Specs Card (Shown for Tennis, Soccer, etc.) -->
+                <div id="classScenarioSpecsCard" style="display: none; background: #eaf5f8; border: 1px solid #0f7e9b; border-radius: 6px; padding: 0.65rem 0.85rem; font-size: 0.85rem; color: #123140; line-height: 1.45;"></div>
+
+                <!-- Obstacle sliders group (Shown only for Cliff & Building) -->
+                <div id="classObstacleGroup">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-top: 0.5rem;">
+                    <div class="param-item">
+                      <div class="param-label-row">
+                        <span>Obstacle Height:</span>
+                        <span class="param-val-badge" id="classBldgHVal">70 m</span>
+                      </div>
+                      <input type="range" id="classBldgH" min="0" max="200" step="1" value="70" class="range-slider">
                     </div>
-                    <input type="range" id="classBldgX1" min="0" max="400" step="0.5" value="230" class="range-slider">
+                    <div class="param-item">
+                      <div class="param-label-row">
+                        <span>Obstacle Distance (<span class="math-expr">x<sub>1</sub></span>):</span>
+                        <span class="param-val-badge" id="classBldgX1Val">230 m</span>
+                      </div>
+                      <input type="range" id="classBldgX1" min="0" max="400" step="1" value="230" class="range-slider">
+                    </div>
                   </div>
-                  <div class="param-item">
-                    <div class="param-label-row">
-                      <span>Obstacle Width / Court:</span>
-                      <span class="param-val-badge" id="classBldgWVal">80 m</span>
+
+                  <div style="display: grid; grid-template-columns: 1fr; gap: 0.85rem; margin-top: 0.5rem;">
+                    <div class="param-item">
+                      <div class="param-label-row">
+                        <span>Obstacle Width:</span>
+                        <span class="param-val-badge" id="classBldgWVal">80 m</span>
+                      </div>
+                      <input type="range" id="classBldgW" min="0" max="150" step="1" value="80" class="range-slider">
                     </div>
-                    <input type="range" id="classBldgW" min="0" max="150" step="0.5" value="80" class="range-slider">
                   </div>
                 </div>
 
