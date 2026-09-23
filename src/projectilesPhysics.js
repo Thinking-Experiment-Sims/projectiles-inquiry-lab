@@ -485,10 +485,10 @@
    * Generate discretized trajectory points including collision detection.
    */
   ProjectilesPhysics.generateTrajectory = function (params) {
-    const x0 = params.x0 || 0;
-    const y0 = params.y0 || 0;
-    const v0 = params.v0 || 20;
-    const thetaDeg = params.thetaDeg || 45;
+    const x0 = params.x0 !== undefined ? params.x0 : 0;
+    const y0 = params.y0 !== undefined ? params.y0 : 0;
+    const v0 = params.v0 !== undefined ? params.v0 : 20;
+    const thetaDeg = params.thetaDeg !== undefined ? params.thetaDeg : 45;
     const g = params.g !== undefined ? params.g : 9.80;
     const groundY = params.groundY !== undefined ? params.groundY : 0;
     const ceilingY = params.ceilingY !== undefined ? params.ceilingY : null;
@@ -601,9 +601,9 @@
    * Build Cornell T-Chart mathematical breakdown object.
    */
   ProjectilesPhysics.buildTChartData = function (params) {
-    const x0 = params.x0 || 0;
-    const y0 = params.y0 || 0;
-    const v0 = params.v0 || 20;
+    const x0 = params.x0 !== undefined ? params.x0 : 0;
+    const y0 = params.y0 !== undefined ? params.y0 : 0;
+    const v0 = params.v0 !== undefined ? params.v0 : 20;
     const thetaDeg = params.thetaDeg !== undefined ? params.thetaDeg : 45;
     const g = params.g !== undefined ? params.g : 9.80;
     const t = Math.max(0, params.t || 0);

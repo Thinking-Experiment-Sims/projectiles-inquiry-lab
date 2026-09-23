@@ -498,9 +498,13 @@
   // ==========================================================================
 
   let lastTimestamp = null;
+  let animFrameId = null;
 
   function runSimulationLoop(timestamp) {
-    if (!state.isRunning) return;
+    if (!state.isRunning) {
+      animFrameId = null;
+      return;
+    }
 
     if (!lastTimestamp) lastTimestamp = timestamp;
     const realDt = Math.min((timestamp - lastTimestamp) / 1000, 0.1);
@@ -512,8 +516,10 @@
 
     render();
 
-    if (state.isRunning) {
-      requestAnimationFrame(runSimulationLoop);
+    if (state.isRunning && !state.isPaused) {
+      animFrameId = requestAnimationFrame(runSimulationLoop);
+    } else {
+      animFrameId = null;
     }
   }
 
@@ -668,7 +674,10 @@
         const tLand = disc2 >= 0 ? (decomp2.vy + Math.sqrt(disc2)) / cp.g : 9999;
         const xLand = cp.x0 + decomp2.vx * tLand;
 
-        if (!state.hasEnded && (t >= tLand || pos.y <= 0)) {
+        const hasPassedNet = cp._hasReachedNet || t >= tNet;
+        const isTennisLanding = t >= tLand || (hasPassedNet && pos.y <= 0);
+
+        if (!state.hasEnded && hasPassedNet && isTennisLanding) {
           state.hasEnded = true;
           state.simTime = tLand;
           cp.projPos = { x: xLand, y: 0 };
@@ -732,7 +741,11 @@
         const tGround = disc3 >= 0 ? (decomp3.vy + Math.sqrt(disc3)) / cp.g : 9999;
         const xGround = cp.x0 + decomp3.vx * tGround;
 
-        if (!state.hasEnded && (t >= tGround || pos.y <= 0)) {
+        const tApex = decomp3.vy > 0 ? decomp3.vy / cp.g : 0;
+        const hasPassedWall = cp._hasReachedWall || t >= tWall;
+        const isSoccerLanding = t >= tGround || (hasPassedWall && t >= tApex && pos.y <= 0);
+
+        if (!state.hasEnded && hasPassedWall && isSoccerLanding) {
           state.hasEnded = true;
           state.simTime = tGround;
           cp.projPos = { x: xGround, y: 0 };
@@ -790,7 +803,7 @@
   }
 
   function fireSimulation() {
-    if (state.isRunning && state.isPaused) {
+    if (state.isRunning && state.isPaused && !state.hasEnded) {
       resumeSimulation();
       return;
     }
@@ -805,21 +818,32 @@
     btnPause.disabled = false;
     setBanner("running", "IN FLIGHT", "Projectile is in motion. Tracking telemetry...");
     sfx.playLaunch();
-    requestAnimationFrame(runSimulationLoop);
+    if (animFrameId) {
+      cancelAnimationFrame(animFrameId);
+    }
+    animFrameId = requestAnimationFrame(runSimulationLoop);
   }
 
   function pauseSimulation() {
     state.isPaused = true;
+    if (animFrameId) {
+      cancelAnimationFrame(animFrameId);
+      animFrameId = null;
+    }
     btnPause.innerHTML = '<span>▶</span> Resume';
     btnFire.disabled = false;
     btnFireText.textContent = "Relaunch";
   }
 
   function resumeSimulation() {
+    if (!state.isRunning || state.hasEnded) return;
     state.isPaused = false;
     btnPause.innerHTML = '<span>❚❚</span> Pause';
     lastTimestamp = null;
-    requestAnimationFrame(runSimulationLoop);
+    if (animFrameId) {
+      cancelAnimationFrame(animFrameId);
+    }
+    animFrameId = requestAnimationFrame(runSimulationLoop);
   }
 
   function stepForward() {
@@ -839,6 +863,10 @@
     state.hasEnded = false;
     state.simTime = 0;
     lastTimestamp = null;
+    if (animFrameId) {
+      cancelAnimationFrame(animFrameId);
+      animFrameId = null;
+    }
 
     btnFire.disabled = false;
     btnPause.disabled = true;
@@ -866,6 +894,8 @@
       setBanner("ready", "MARK ROBER DARTBOARD", "Release dart to see motorized board slide along vertical track to intercept!");
     } else if (state.mode === "classroom") {
       state.classroom.projPos = { x: state.classroom.x0, y: state.classroom.y0 };
+      state.classroom._hasReachedWall = false;
+      state.classroom._hasReachedNet = false;
       state.classroom._pausedAtNet = false;
       const pType = state.classroom.problemType || "cliff-building";
       if (pType === "tennis") {

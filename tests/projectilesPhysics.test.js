@@ -311,3 +311,23 @@ test("Packet 6 #49 Tennis Serve Challenge", () => {
   assert.equal(res.faultReason, "long_out");
 });
 
+test("Horizontal launch (thetaDeg: 0) does not shoot upwards", () => {
+  const traj = ProjectilesPhysics.generateTrajectory({
+    x0: 0,
+    y0: 2.5,
+    v0: 40,
+    thetaDeg: 0,
+    g: 9.80,
+    dt: 0.01
+  });
+
+  assert.ok(traj.points.length > 5);
+  // Initial point
+  assert.equal(traj.points[0].x, 0);
+  assert.equal(traj.points[0].y, 2.5);
+
+  // Since vy = 0 at t=0, y should strictly decrease and NEVER exceed y0 = 2.5
+  for (const pt of traj.points) {
+    assert.ok(pt.y <= 2.5001, `Point y ${pt.y} exceeded launch height 2.5`);
+  }
+});
