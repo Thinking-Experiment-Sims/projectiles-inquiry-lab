@@ -2299,13 +2299,14 @@
       btnQuickModeAction.innerHTML = "<span>🎯</span> Auto-Aim Directly";
       btnQuickModeAction.style.display = "inline-flex";
 
-      addPresetPill("Gizmo Classic (26 m/s)", true, () => {
+      addPresetPill("Classic Intercept (26 m/s)", true, () => {
         state.monkey.v0 = 26.0;
         state.monkey.xm = 25.0;
         state.monkey.ym = 16.0;
         state.monkey.thetaDeg = 32.6;
         syncSliders();
         resetSimulation();
+        updateInquiryScenarioCard("monkey", "classic");
       });
 
       addPresetPill("Slow Feed (18 m/s)", false, () => {
@@ -2315,6 +2316,7 @@
         state.monkey.thetaDeg = 32.6;
         syncSliders();
         resetSimulation();
+        updateInquiryScenarioCard("monkey", "slow");
       });
 
       addPresetPill("High Fast Feed (40 m/s)", false, () => {
@@ -2324,6 +2326,7 @@
         state.monkey.thetaDeg = 32.6;
         syncSliders();
         resetSimulation();
+        updateInquiryScenarioCard("monkey", "fast");
       });
 
       addPresetPill("Zero-Gravity (g = 0)", false, () => {
@@ -2333,6 +2336,7 @@
         toggleZeroG.classList.add("active");
         syncSliders();
         resetSimulation();
+        updateInquiryScenarioCard("monkey", "zerog");
       });
 
     } else if (state.mode === "mark-rober") {
@@ -2347,6 +2351,7 @@
         state.markRober.g = 10.0;
         syncSliders();
         resetSimulation();
+        updateInquiryScenarioCard("mark-rober", "default");
       });
 
       addPresetPill("Low Ceiling Test (5.5m)", false, () => {
@@ -2357,6 +2362,7 @@
         state.markRober.g = 10.0;
         syncSliders();
         resetSimulation();
+        updateInquiryScenarioCard("mark-rober", "low-ceiling");
       });
 
       addPresetPill("Long Throw (10m Board)", false, () => {
@@ -2367,6 +2373,7 @@
         state.markRober.g = 10.0;
         syncSliders();
         resetSimulation();
+        updateInquiryScenarioCard("mark-rober", "long-throw");
       });
 
     } else if (state.mode === "classroom") {
@@ -2384,6 +2391,7 @@
         state.classroom.g = 10.0;
         syncSliders();
         resetSimulation();
+        updateInquiryScenarioCard("classroom", "cliff-building");
       });
 
       addPresetPill("🎾 Tennis Serve Challenge", false, () => {
@@ -2397,6 +2405,7 @@
         state.classroom.g = 9.8;
         syncSliders();
         resetSimulation();
+        updateInquiryScenarioCard("classroom", "tennis");
       });
 
       addPresetPill("⚽ Soccer Kick (20 & 12 m/s)", false, () => {
@@ -2410,6 +2419,7 @@
         state.classroom.g = 9.8;
         syncSliders();
         resetSimulation();
+        updateInquiryScenarioCard("classroom", "soccer");
       });
 
       addPresetPill("📦 Box Roll-Off (2m, 5 m/s)", false, () => {
@@ -2423,6 +2433,7 @@
         state.classroom.g = 9.8;
         syncSliders();
         resetSimulation();
+        updateInquiryScenarioCard("classroom", "box-drop");
       });
 
       addPresetPill("⛰️ 100m Cliff Launch (300m range)", false, () => {
@@ -2436,6 +2447,7 @@
         state.classroom.g = 9.8;
         syncSliders();
         resetSimulation();
+        updateInquiryScenarioCard("classroom", "cliff-100m");
       });
 
     } else {
@@ -2446,6 +2458,7 @@
         state.sandbox.y0 = 0;
         syncSliders();
         resetSimulation();
+        updateInquiryScenarioCard("sandbox", "max-range");
       });
       addPresetPill("Elevated Launch (15m, 30°)", false, () => {
         state.sandbox.v0 = 25.0;
@@ -2453,8 +2466,11 @@
         state.sandbox.y0 = 15.0;
         syncSliders();
         resetSimulation();
+        updateInquiryScenarioCard("sandbox", "elevated");
       });
     }
+
+    updateInquiryScenarioCard(state.mode);
   }
 
   function addPresetPill(text, isActive, onClick) {
