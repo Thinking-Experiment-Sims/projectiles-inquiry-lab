@@ -288,6 +288,7 @@
       worldYMax = Math.max(state.markRober.ceilingY + 1.2, 9.2);
     } else if (state.mode === "classroom") {
       const cp = state.classroom;
+      const pType = cp.problemType || "cliff-building";
       const decomp = ProjectilesPhysics.decomposeVelocity(cp.v0, cp.thetaDeg);
       const tFlight = ProjectilesPhysics.calculateTimeOfFlight(cp.y0, decomp.vy, cp.g, 0);
       const xLand = cp.x0 + decomp.vx * tFlight;
@@ -304,6 +305,14 @@
       worldXMax = objMaxX + Math.max(marginX, 0.8);
       worldYMin = -Math.max(marginY * 0.5, 0.3);
       worldYMax = objMaxY + Math.max(marginY, 0.5);
+
+      // Enforce minimum vertical space so figures / annotations are legible
+      if (pType === "tennis") {
+        worldYMax = Math.max(worldYMax, 8.0);   // tennis: 8m tall world minimum
+        worldXMax = Math.max(worldXMax, xLand + 3);
+      } else if (pType === "soccer") {
+        worldYMax = Math.max(worldYMax, 12.0);  // soccer: 12m tall world minimum
+      }
     } else if (state.mode === "sandbox") {
       const sb = state.sandbox;
       const decomp = ProjectilesPhysics.decomposeVelocity(sb.v0, sb.thetaDeg);
@@ -615,56 +624,100 @@
         }
 
       } else if (pType === "tennis") {
-        // Tennis: net collision check, then ground landing
-        const netX = cp.x1;   // 12.0 m
+        // Tennis: use analytical landing time for precise clamping
+        const netX = cp.x1;       // 12.0 m
         const netH = cp.bldgHeight; // 0.92 m
         const serviceLine = cp.x2; // 18.4 m
-        if (pos.x >= netX && pos.y <= netH && !state.hasEnded) {
-          // Ball crossed net x but below net height → net fault
+        const decomp2 = ProjectilesPhysics.decomposeVelocity(cp.v0, cp.thetaDeg);
+        const tNet = decomp2.vx > 0 ? (netX - cp.x0) / decomp2.vx : 9999;
+        const yAtNet = cp.y0 + decomp2.vy * tNet - 0.5 * cp.g * tNet * tNet;
+
+        // Phase 1: check net crossing for pedagogical freeze-frame
+        if (!state.hasEnded && !cp._pausedAtNet && t >= tNet) {
+          cp._pausedAtNet = true;
+          if (yAtNet <= netH) {
+            // Hit the net
+            state.hasEnded = true;
+            sfx.playMiss();
+            setBanner("miss", "NET FAULT", `Ball hit the net! Height at net: ${yAtNet.toFixed(2)}m < ${netH}m.`);
+            logTrial("Classroom", cp.v0, cp.thetaDeg, tNet, netX, yAtNet, "NET HIT");
+            pauseSimulation();
+          } else {
+            // Clears net — freeze for 1.2s so student can read clearance badge
+            const marginStr = (yAtNet - netH).toFixed(2);
+            setBanner("running", "NET CLEARED ✓", `Ball at net: y = ${yAtNet.toFixed(2)}m — clears by +${marginStr}m!`);
+            pauseSimulation();
+            // Auto-resume after 1.2s to show landing
+            setTimeout(() => {
+              if (!state.hasEnded && state.isPaused) {
+                cp._pausedAtNet = false;
+                resumeSimulation();
+              }
+            }, 1200);
+          }
+        }
+
+        // Phase 2: ground landing check (run after net pause is cleared)
+        if (!state.hasEnded && cp._pausedAtNet !== true && pos.y <= 0) {
           state.hasEnded = true;
-          sfx.playMiss();
-          setBanner("miss", "NET FAULT", `Ball hit the net at x = ${netX.toFixed(1)}m (height = ${pos.y.toFixed(2)}m < ${netH}m net).`);
-          logTrial("Classroom", cp.v0, cp.thetaDeg, t, pos.x, pos.y, "NET HIT");
-          pauseSimulation();
-        } else if (pos.y <= 0 && !state.hasEnded) {
-          state.hasEnded = true;
-          const inService = pos.x <= serviceLine;
+          // Clamp to exact landing position
+          const disc2 = decomp2.vy * decomp2.vy + 2 * cp.g * cp.y0;
+          const tLand = disc2 >= 0 ? (decomp2.vy + Math.sqrt(disc2)) / cp.g : t;
+          const xLand = cp.x0 + decomp2.vx * tLand;
+          cp.projPos = { x: xLand, y: 0 };
+          state.simTime = tLand;
+          const inService = xLand <= serviceLine;
           sfx.playHit();
           if (inService) {
-            setBanner("hit", "GOOD SERVE!", `Lands at x = ${pos.x.toFixed(1)}m — inside service box (≤${serviceLine}m)!`);
-            logTrial("Classroom", cp.v0, cp.thetaDeg, t, pos.x, 0, "GOOD SERVE");
+            setBanner("hit", "GOOD SERVE!", `Lands at x = ${xLand.toFixed(2)}m — inside service box (≤ ${serviceLine}m)!`);
+            logTrial("Classroom", cp.v0, cp.thetaDeg, tLand, xLand, 0, "GOOD SERVE");
           } else {
-            setBanner("miss", "FAULT — LONG", `Lands at x = ${pos.x.toFixed(1)}m — ${(pos.x - serviceLine).toFixed(1)}m past the ${serviceLine}m service line!`);
-            logTrial("Classroom", cp.v0, cp.thetaDeg, t, pos.x, 0, "FAULT LONG");
+            setBanner("miss", "FAULT — LONG", `Lands at x = ${xLand.toFixed(2)}m — ${(xLand - serviceLine).toFixed(2)}m past the ${serviceLine}m service line!`);
+            logTrial("Classroom", cp.v0, cp.thetaDeg, tLand, xLand, 0, "FAULT LONG");
           }
           pauseSimulation();
         }
 
       } else if (pType === "soccer") {
-        // Soccer: goal-wall collision check, then ground landing
-        const goalX = cp.x1;   // 49.0 m
+        // Soccer: goal-wall + ground landing with exact clamping
+        const goalX = cp.x1;     // 49.0 m
         const goalH = cp.bldgHeight; // 2.44 m
-        if (pos.x >= goalX && !state.hasEnded) {
+        const decomp3 = ProjectilesPhysics.decomposeVelocity(cp.v0, cp.thetaDeg);
+
+        // Clamp to exact ground time to avoid overshooting
+        const discS = decomp3.vy * decomp3.vy + 2 * cp.g * cp.y0;
+        const tGround = discS >= 0 ? (decomp3.vy + Math.sqrt(discS)) / cp.g : 9999;
+
+        // Exact position at ground landing
+        const xAtGround = cp.x0 + decomp3.vx * tGround;
+
+        if (!state.hasEnded && t >= tGround) {
           state.hasEnded = true;
-          if (pos.y >= 0 && pos.y <= goalH) {
-            sfx.playHit();
-            setBanner("hit", "GOAL!", `Ball enters the goal at x = ${goalX.toFixed(0)}m, height = ${pos.y.toFixed(2)}m!`);
-            logTrial("Classroom", cp.v0, cp.thetaDeg, t, pos.x, pos.y, "GOAL");
-          } else if (pos.y > goalH) {
-            sfx.playMiss();
-            setBanner("miss", "OVER THE BAR", `Ball passes over goal at x = ${goalX.toFixed(0)}m, height = ${pos.y.toFixed(2)}m > ${goalH}m crossbar.`);
-            logTrial("Classroom", cp.v0, cp.thetaDeg, t, pos.x, pos.y, "OVER");
+          state.simTime = tGround;
+          cp.projPos = { x: xAtGround, y: 0 };
+
+          // Check if ball lands on or past goal line
+          if (xAtGround >= goalX) {
+            // It reaches the goal — check height at goal x
+            const tAtGoal = decomp3.vx > 0 ? (goalX - cp.x0) / decomp3.vx : 0;
+            const yAtGoal = cp.y0 + decomp3.vy * tAtGoal - 0.5 * cp.g * tAtGoal * tAtGoal;
+            cp.projPos = { x: goalX, y: Math.max(0, yAtGoal) };
+            state.simTime = tAtGoal;
+
+            if (yAtGoal > goalH) {
+              sfx.playMiss();
+              setBanner("miss", "OVER THE CROSSBAR", `Ball height at goal: y = ${yAtGoal.toFixed(2)}m > ${goalH}m crossbar — no goal!`);
+              logTrial("Classroom", cp.v0, cp.thetaDeg, tAtGoal, goalX, yAtGoal, "OVER BAR");
+            } else {
+              sfx.playHit();
+              setBanner("hit", "GOAL! ⚽", `Ball enters goal at x = ${goalX.toFixed(0)}m, height = ${Math.max(0,yAtGoal).toFixed(2)}m!`);
+              logTrial("Classroom", cp.v0, cp.thetaDeg, tAtGoal, goalX, Math.max(0, yAtGoal), "GOAL");
+            }
           } else {
             sfx.playMiss();
-            setBanner("miss", "GROUND BEFORE GOAL", `Ball hits ground before reaching the goal.`);
-            logTrial("Classroom", cp.v0, cp.thetaDeg, t, pos.x, 0, "GROUND");
+            setBanner("miss", "LANDS SHORT", `Ball lands at x = ${xAtGround.toFixed(1)}m — ${(goalX - xAtGround).toFixed(1)}m short of the goal!`);
+            logTrial("Classroom", cp.v0, cp.thetaDeg, tGround, xAtGround, 0, "SHORT");
           }
-          pauseSimulation();
-        } else if (pos.y <= 0 && !state.hasEnded) {
-          state.hasEnded = true;
-          sfx.playMiss();
-          setBanner("miss", "GROUND IMPACT", `Lands on pitch at x = ${pos.x.toFixed(1)}m before reaching the goal.`);
-          logTrial("Classroom", cp.v0, cp.thetaDeg, t, pos.x, 0, "GROUND HIT");
           pauseSimulation();
         }
 
@@ -758,7 +811,17 @@
     btnFire.disabled = false;
     btnPause.disabled = true;
     btnPause.innerHTML = '<span>❚❚</span> Pause';
-    btnFireText.textContent = state.mode === "mark-rober" ? "Throw Dart" : "Fire Cannon";
+    const cp = state.classroom;
+    const pType = (cp && cp.problemType) || "cliff-building";
+    if (state.mode === "mark-rober") {
+      btnFireText.textContent = "Throw Dart";
+    } else if (state.mode === "classroom") {
+      if (pType === "tennis") btnFireText.textContent = "Serve";
+      else if (pType === "soccer") btnFireText.textContent = "Kick";
+      else btnFireText.textContent = "Launch";
+    } else {
+      btnFireText.textContent = "Launch";
+    }
 
     if (state.mode === "monkey") {
       state.monkey.bananaPos = { x: state.monkey.x0, y: state.monkey.y0 };
@@ -771,6 +834,7 @@
       setBanner("ready", "MARK ROBER DARTBOARD", "Release dart to see motorized board slide along vertical track to intercept!");
     } else if (state.mode === "classroom") {
       state.classroom.projPos = { x: state.classroom.x0, y: state.classroom.y0 };
+      state.classroom._pausedAtNet = false;
       const pType = state.classroom.problemType || "cliff-building";
       if (pType === "tennis") {
         setBanner("ready", "PROBLEM 49: TENNIS FLAT SERVE", "Horizontal serve from 2.5m at 40 m/s. Check net clearance & service line boundary!");
@@ -2835,10 +2899,16 @@
       });
 
     } else if (state.mode === "classroom") {
-      btnQuickModeAction.innerHTML = "<span>🏔️</span> Notes: Cliff & Building";
-      btnQuickModeAction.style.display = "inline-flex";
-
       const curType = state.classroom.problemType || "cliff-building";
+      const notesLabels = {
+        "cliff-building": "🏔️ Notes: Cliff & Building",
+        "cliff-100m":     "⛰️ Notes: 100m Cliff",
+        "soccer":         "⚽ Notes: Soccer Kick",
+        "tennis":         "🎾 Notes: Tennis Serve",
+        "box-drop":       "📦 Notes: Box Roll-Off"
+      };
+      btnQuickModeAction.innerHTML = `<span></span> ${notesLabels[curType] || "📋 Notes"}`;
+      btnQuickModeAction.style.display = "inline-flex";
 
       addPresetPill("🏔️ Lecture Notes: 320m Cliff & 70m Building", curType === "cliff-building", () => {
         state.classroom.problemType = "cliff-building";
