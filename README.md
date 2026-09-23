@@ -10,7 +10,7 @@ An interactive 2D projectile kinematics virtual laboratory and inquiry simulator
 
 ## 🎯 Pedagogical Pillars
 
-### 1. Feed the Monkey (Gizmo Activity Inquiry)
+### 1. Feed the Monkey (Classic Intercept Challenge)
 - **The Setup**: A banana cannon aims directly at a monkey hanging from a tree branch. As the cannon fires, the sound startles the monkey, which releases the branch and begins free-falling at $t = 0$.
 - **The Theorem**: Both the projectile and the falling target accelerate downward at the identical gravitational rate ($a_y = -g$). Over flight duration $t$, both objects drop by the exact same vertical distance:
   $$\Delta y_{\text{drop}} = \frac{1}{2}gt^2$$

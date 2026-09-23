@@ -847,19 +847,95 @@ body {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.35rem;
+/* ==========================================================================
+   Inquiry Scenario & Problem Statement Card
+   ========================================================================== */
+
+.inquiry-scenario-card {
+  background: #f4fbfe;
+  border: 1px solid #cce8f2;
+  border-left: 4px solid var(--primary-teal);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 0.85rem;
 }
+
+.inquiry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.inquiry-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary-teal-dark);
+  background: var(--primary-teal-light);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--primary-teal-border);
+}
+
+.inquiry-title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--primary-teal-dark);
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.inquiry-narrative {
+  font-size: 0.86rem;
+  color: var(--ink);
+  line-height: 1.5;
+  margin-bottom: 0.65rem;
+}
+
+.inquiry-questions-box {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.95rem;
+}
+
+.inquiry-questions-heading {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent-amber-dark);
+  margin-bottom: 0.35rem;
+}
+
+.inquiry-questions-list {
+  padding-left: 1.2rem;
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.inquiry-questions-list li {
+  margin-bottom: 0.25rem;
+}
+
+/* ==========================================================================
+   Collapsible Step-by-Step Pedagogical Math Cards
+   ========================================================================== */
 
 .math-step-card {
   background: var(--surface-alt);
   border: 1px solid var(--border-light);
   border-left: 3.5px solid var(--primary-teal);
   border-radius: var(--radius-sm);
-  padding: 0.65rem 0.75rem;
   margin-bottom: 0.65rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  overflow-x: hidden;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .math-step-card.accent-amber {
@@ -870,19 +946,51 @@ body {
   border-left-color: var(--primary-teal-dark);
 }
 
-.math-step-title {
+.math-step-header {
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+  user-select: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.8rem;
+  background: var(--surface-alt);
+  transition: background 0.15s ease;
+}
+
+.math-step-header:hover {
+  background: #eef6f9;
+}
+
+.math-step-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.84rem;
   font-weight: 700;
   color: var(--primary-teal-dark);
 }
 
-.math-step-desc {
-  font-size: 0.77rem;
+.math-step-chevron {
+  font-size: 0.72rem;
   color: var(--muted);
-  line-height: 1.35;
+  transition: transform 0.2s ease;
+}
+
+.math-step-card.open .math-step-chevron {
+  transform: rotate(180deg);
+}
+
+.math-step-body {
+  display: none;
+  padding: 0.65rem 0.85rem;
+  border-top: 1px solid var(--border-light);
+  background: #ffffff;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.math-step-card.open .math-step-body {
+  display: flex;
 }
 
 .math-step-row {

@@ -787,6 +787,48 @@
   // Beautiful Math Solution Card (Fixed KaTeX + Clean Stacked Fractions)
   // ==========================================================================
 
+  // ==========================================================================
+  // KaTeX Vector Typesetting & Collapsible Step Card Builders
+  // ==========================================================================
+
+  function katex(latex, display = false) {
+    if (window.katex && typeof window.katex.renderToString === "function") {
+      try {
+        return window.katex.renderToString(latex, { displayMode: display, throwOnError: false });
+      } catch (e) {
+        return latex;
+      }
+    }
+    return latex;
+  }
+
+  function buildStepCard(stepNum, title, badge, desc, rows, isAccent = false, isAccentDark = false) {
+    const accentClass = isAccent ? " accent-amber" : (isAccentDark ? " accent-dark" : "");
+    const rowHtml = rows.map(r => `
+      <div class="math-step-row">
+        ${r.label ? `<span class="math-step-label">${r.label}</span>` : ""}
+        <div class="math-step-math">${r.math}</div>
+      </div>
+    `).join("");
+
+    return `
+      <div class="math-step-card${accentClass}">
+        <div class="math-step-header" onclick="this.parentElement.classList.toggle('open')">
+          <div class="math-step-title">
+            <span class="step-num-badge">${stepNum}</span>
+            <span>${title}</span>
+            ${badge ? `<span class="lab-badge">${badge}</span>` : ""}
+          </div>
+          <span class="math-step-chevron">▼</span>
+        </div>
+        <div class="math-step-body">
+          ${desc ? `<div class="math-step-desc">${desc}</div>` : ""}
+          ${rowHtml}
+        </div>
+      </div>
+    `;
+  }
+
   function updatePedagogyCards() {
     let v0 = 26, thetaDeg = 32.6, g = 9.80, x0 = 0, y0 = 0;
     const mathContainer = document.getElementById("mathCardContent");
@@ -806,65 +848,68 @@
       const drop = res ? res.dropDist.toFixed(2) : "4.90";
       const yCatch = res ? res.yMonkeyAtTime.toFixed(2) : "11.10";
 
+      const step1 = buildStepCard(
+        1, "Step 1: Direct Line-of-Sight Aim Geometry", "Targeting Ray",
+        "Aim the cannon barrel directly along the straight sightline connecting the cannon origin to the monkey.",
+        [
+          {
+            label: "Trigonometric Sightline Angle",
+            math: katex(`\\tan(\\theta) = \\frac{y_{\\text{monkey}} - y_0}{x_{\\text{monkey}} - x_0}`)
+          },
+          {
+            label: "Numerical Evaluation",
+            math: `${katex(`\\tan(\\theta) = \\frac{${m.ym.toFixed(1)} - ${m.y0.toFixed(1)}}{${m.xm.toFixed(1)} - ${m.x0.toFixed(1)}} \\implies \\theta_{\\text{aim}} = ${directDeg}^\\circ`)} <span class="math-eval-tag">Aim: ${directDeg}°</span>`
+          }
+        ]
+      );
+
+      const step2 = buildStepCard(
+        2, "Step 2: Time as Bridge (Horizontal Motion, aₓ = 0)", "Flight Time",
+        "Horizontal velocity is constant. Solve for time to reach the monkey's x-coordinate.",
+        [
+          {
+            label: "Horizontal Position Law",
+            math: katex(`x(t) = x_0 + v_{0x} t = x_0 + v_0 \\cos(\\theta) t \\implies t_{\\text{intercept}} = \\frac{x_{\\text{monkey}} - x_0}{v_0 \\cos(\\theta)}`)
+          },
+          {
+            label: "Time to Intercept",
+            math: `${katex(`t_{\\text{intercept}} = \\frac{${(m.xm - m.x0).toFixed(1)}\\text{ m}}{(${m.v0.toFixed(1)}\\text{ m/s}) \\cos(${thetaDeg.toFixed(1)}^\\circ)} = ${tInt}\\text{ s}`)} <span class="math-eval-tag">${tInt} s</span>`
+          }
+        ],
+        true
+      );
+
+      const step3 = buildStepCard(
+        3, "Step 3: Synchronized Vertical Free-Fall Drop (aᵧ = -g)", "Equal Drop Proof",
+        "Both the projectile and the monkey accelerate downward under gravity from the instant of firing.",
+        [
+          {
+            label: "Vertical Positions from Line of Sight",
+            math: katex(`y_{\\text{banana}}(t) = y_{\\text{sight}}(t) - \\frac{1}{2}gt^2, \\quad y_{\\text{monkey}}(t) = y_{m,0} - \\frac{1}{2}gt^2`)
+          },
+          {
+            label: "Identical Drop Distance",
+            math: `${katex(`\\Delta y_{\\text{drop}} = \\frac{1}{2}gt^2 = 0.5 \\cdot (${g.toFixed(1)}\\text{ m/s}^2) \\cdot (${tInt}\\text{ s})^2 = ${drop}\\text{ m}`)} <span class="math-eval-tag">${drop} m</span>`
+          },
+          {
+            label: "Intercept Collision Altitude",
+            math: `${katex(`y_{\\text{catch}} = ${m.ym.toFixed(1)} - ${drop} = ${yCatch}\\text{ m}`)} <span class="math-eval-tag" style="background: var(--primary-teal-light); color: var(--primary-teal-dark);">Catch y = ${yCatch} m</span>`
+          }
+        ],
+        false, true
+      );
+
       mathContainer.innerHTML = `
-        <div class="math-title">
-          <span>🐵 Feed the Monkey: Free-Fall Drop Equivalence Proof</span>
-          <span class="lab-badge">Gizmo Inquiry</span>
-        </div>
-
-        <div class="math-step-card">
-          <div class="math-step-title">
-            <span>Step 1: Direct Line-of-Sight Aim Geometry</span>
-            <span class="lab-badge">Targeting Ray</span>
-          </div>
-          <div class="math-step-desc">Aim the cannon barrel directly along the straight sightline connecting cannon to monkey.</div>
-          <div class="math-step-row">
-            <span class="math-step-label">Fundamental Trigonometric Relation</span>
-            <div class="math-step-math">tan(θ) = <span class="fraction"><span class="num">y_monkey - y₀</span><span class="den">x_monkey - x₀</span></span></div>
-          </div>
-          <div class="math-step-row">
-            <span class="math-step-label">Numerical Substitution</span>
-            <div class="math-step-math">tan(θ) = <span class="fraction"><span class="num">${m.ym.toFixed(1)} m - ${m.y0.toFixed(1)} m</span><span class="den">${m.xm.toFixed(1)} m - ${m.x0.toFixed(1)} m</span></span> &implies; <span class="math-eval-tag">θ_aim = ${directDeg}°</span></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.4rem;">
+          <span style="font-size: 0.95rem; font-weight: 700; color: var(--primary-teal-dark);">🐵 Feed the Monkey: First-Principles Proof</span>
+          <div style="display: flex; gap: 0.35rem;">
+            <button type="button" class="btn btn-sm btn-secondary" id="btnExpandAllMath" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Expand All</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="btnCollapseAllMath" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Collapse All</button>
           </div>
         </div>
-
-        <div class="math-step-card accent-amber">
-          <div class="math-step-title">
-            <span>Step 2: Time as Bridge (Horizontal Motion)</span>
-            <span class="lab-badge">aₓ = 0</span>
-          </div>
-          <div class="math-step-desc">Time required for the flying banana to travel horizontally to the monkey's x-coordinate.</div>
-          <div class="math-step-row">
-            <span class="math-step-label">Horizontal Kinematic Law</span>
-            <div class="math-step-math">x(t) = x₀ + v₀ₓ · t = x₀ + v₀ · cos(θ) · t &implies; t_intercept = <span class="fraction"><span class="num">x_monkey - x₀</span><span class="den">v₀ · cos(θ)</span></span></div>
-          </div>
-          <div class="math-step-row">
-            <span class="math-step-label">Numerical Substitution</span>
-            <div class="math-step-math">t_intercept = <span class="fraction"><span class="num">${(m.xm - m.x0).toFixed(1)} m</span><span class="den">(${m.v0.toFixed(1)} m/s) · cos(${thetaDeg.toFixed(1)}°)</span></span> = <span class="math-eval-tag">${tInt} s</span></div>
-          </div>
-        </div>
-
-        <div class="math-step-card accent-dark">
-          <div class="math-step-title">
-            <span>Step 3: Synchronized Vertical Free-Fall Drop</span>
-            <span class="lab-badge">aᵧ = -g</span>
-          </div>
-          <div class="math-step-desc">Both the banana and the monkey start falling downward under gravity at the exact instant of firing.</div>
-          <div class="math-step-row">
-            <span class="math-step-label">Vertical Position Laws</span>
-            <div class="math-step-math">y_banana(t) = y_sight(t) - <span class="fraction"><span class="num">1</span><span class="den">2</span></span> · g · t² &emsp;|&emsp; y_monkey(t) = y_monkey,0 - <span class="fraction"><span class="num">1</span><span class="den">2</span></span> · g · t²</div>
-          </div>
-          <div class="math-step-row">
-            <span class="math-step-label">Equal Drop Distance</span>
-            <div class="math-step-math">Δy_drop = <span class="fraction"><span class="num">1</span><span class="den">2</span></span> · g · t² = 0.5 · (${g.toFixed(1)} m/s²) · (${tInt} s)² = <span class="math-eval-tag">${drop} m</span></div>
-          </div>
-          <div class="math-step-row">
-            <span class="math-step-label">Intercept Evaluation</span>
-            <div class="math-step-math">Because y_sight(t_intercept) = y_monkey,0, both objects drop by the identical distance (${drop} m)!</div>
-            <div class="math-step-math"><span class="math-eval-tag" style="background: var(--success-bg); color: var(--success);">Catch Altitude: y = ${yCatch} m</span></div>
-          </div>
-        </div>
-
+        ${step1}
+        ${step2}
+        ${step3}
         <div class="status-badge-inline ${res && res.isAimedAtMonkey ? 'safe' : 'warn'}" style="width: 100%; justify-content: center; margin-top: 0.35rem;">
           ${res && res.isAimedAtMonkey ? `🎯 Direct Aim Confirmed (${thetaDeg.toFixed(1)}°): Banana & Monkey meet at y = ${yCatch}m for ANY launch speed!` : `⚠️ Misaligned Aim (${thetaDeg.toFixed(1)}° vs ${directDeg}°). The banana will miss the falling monkey.`}
         </div>
@@ -886,87 +931,84 @@
       const vx = res ? res.vx.toFixed(2) : "11.49";
       const vy = res ? res.vy.toFixed(2) : "9.64";
 
+      const step1 = buildStepCard(
+        1, "Step 1: Velocity Decomposition (SOH CAHTOA)", "Initial Components",
+        "Decompose initial launch speed into independent horizontal and vertical velocity components.",
+        [
+          {
+            label: "Trigonometric Decomposition",
+            math: katex(`v_{0x} = v_0 \\cos(\\alpha), \\quad v_{0y} = v_0 \\sin(\\alpha)`)
+          },
+          {
+            label: "Numerical Components",
+            math: `${katex(`v_{0x} = (${mr.v0.toFixed(1)}) \\cos(${thetaDeg.toFixed(1)}^\\circ) = ${vx}\\text{ m/s}, \\quad v_{0y} = (${mr.v0.toFixed(1)}) \\sin(${thetaDeg.toFixed(1)}^\\circ) = ${vy}\\text{ m/s}`)}`
+          }
+        ]
+      );
+
+      const step2 = buildStepCard(
+        2, "Step 2: Time to Dartboard (Horizontal Motion, aₓ = 0)", "Time to Wall",
+        "Horizontal velocity is unaccelerated. Find travel time to the wall at x = 5.0 m.",
+        [
+          {
+            label: "Horizontal Kinematic Law",
+            math: katex(`x(t) = x_0 + v_{0x} t \\implies t = \\frac{x_{\\text{board}} - x_0}{v_{0x}}`)
+          },
+          {
+            label: "Numerical Travel Time",
+            math: `${katex(`t = \\frac{${mr.xBoard.toFixed(1)}\\text{ m} - ${mr.x0.toFixed(1)}\\text{ m}}{${vx}\\text{ m/s}} = ${tBoard}\\text{ s}`)} <span class="math-eval-tag">${tBoard} s</span>`
+          }
+        ]
+      );
+
+      const step3 = buildStepCard(
+        3, "Step 3: Target Height H (Worksheet Question 1)", "Motorized Target",
+        "Evaluate vertical position equation at t = t_board to determine where the target carriage must intercept the dart.",
+        [
+          {
+            label: "Vertical Position Law",
+            math: katex(`H = y(t_{\\text{board}}) = y_0 + v_{0y} t_{\\text{board}} - \\frac{1}{2}g t_{\\text{board}}^2`)
+          },
+          {
+            label: "Numerical Substitution",
+            math: `${katex(`H = ${mr.y0.toFixed(1)} + (${vy})(${tBoard}) - 0.5(${g.toFixed(1)})(${tBoard})^2 = ${targetH}\\text{ m}`)} <span class="math-eval-tag" style="background: var(--accent-amber-light); color: var(--accent-amber-dark);">H = ${targetH} m</span>`
+          }
+        ],
+        true
+      );
+
+      const step4 = buildStepCard(
+        4, "Step 4: Maximum Height & Ceiling Clearance (Worksheet Question 2)", "Apex Process",
+        "Determine maximum peak altitude when vertical velocity momentarily drops to zero (vᵧ = 0), and verify ceiling clearance.",
+        [
+          {
+            label: "Part A: Time to Apex (from vᵧ = 0)",
+            math: `${katex(`v_y(t) = v_{0y} - g t \\implies 0 = ${vy} - (${g.toFixed(1)}) t_{\\text{apex}} \\implies t_{\\text{apex}} = \\frac{${vy}}{${g.toFixed(1)}} = ${tApex}\\text{ s}`)} <span class="math-eval-tag">${tApex} s</span>`
+          },
+          {
+            label: "Part B: Maximum Apex Altitude",
+            math: `${katex(`h_{\\text{max}} = y_0 + \\frac{v_{0y}^2}{2g} = ${mr.y0.toFixed(1)} + \\frac{(${vy})^2}{2(${g.toFixed(1)})} = ${hMax}\\text{ m}`)} <span class="math-eval-tag">${hMax} m</span>`
+          },
+          {
+            label: "Part C: Ceiling Clearance Margin",
+            math: `${katex(`\\text{Ceiling: } ${mr.ceilingY.toFixed(1)}\\text{ m} \\quad \\text{vs} \\quad h_{\\text{max}} = ${hMax}\\text{ m} \\implies \\text{Margin} = ${(mr.ceilingY - parseFloat(hMax)).toFixed(2)}\\text{ m}`)}`
+          }
+        ],
+        false, true
+      );
+
       mathContainer.innerHTML = `
-        <div class="math-title">
-          <span>🎯 Mark Rober Automated Dartboard: Full Pedagogical Solution</span>
-          <span class="lab-badge">Worksheet Problems</span>
-        </div>
-
-        <div class="math-step-card">
-          <div class="math-step-title">
-            <span>Step 1: Velocity Decomposition (SOH CAHTOA)</span>
-            <span class="lab-badge">Initial Components</span>
-          </div>
-          <div class="math-step-desc">Resolve launch speed into horizontal and vertical velocity components.</div>
-          <div class="math-step-row">
-            <span class="math-step-label">Trigonometric Formulas</span>
-            <div class="math-step-math">v₀ₓ = v₀ · cos(α) &emsp;|&emsp; v₀ᵧ = v₀ · sin(α)</div>
-          </div>
-          <div class="math-step-row">
-            <span class="math-step-label">Numerical Substitution</span>
-            <div class="math-step-math">v₀ₓ = (${mr.v0.toFixed(1)} m/s) · cos(${thetaDeg.toFixed(1)}°) = <span class="math-eval-tag">v₀ₓ = ${vx} m/s</span></div>
-            <div class="math-step-math">v₀ᵧ = (${mr.v0.toFixed(1)} m/s) · sin(${thetaDeg.toFixed(1)}°) = <span class="math-eval-tag">v₀ᵧ = ${vy} m/s</span></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.4rem;">
+          <span style="font-size: 0.95rem; font-weight: 700; color: var(--primary-teal-dark);">🎯 Mark Rober Dartboard: Step Derivations</span>
+          <div style="display: flex; gap: 0.35rem;">
+            <button type="button" class="btn btn-sm btn-secondary" id="btnExpandAllMath" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Expand All</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="btnCollapseAllMath" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Collapse All</button>
           </div>
         </div>
-
-        <div class="math-step-card">
-          <div class="math-step-title">
-            <span>Step 2: Time as Bridge (Horizontal Motion, aₓ = 0)</span>
-            <span class="lab-badge">Time to Target Board</span>
-          </div>
-          <div class="math-step-desc">Use constant horizontal velocity to solve for travel time to the motorized dartboard.</div>
-          <div class="math-step-row">
-            <span class="math-step-label">Horizontal Kinematic Law</span>
-            <div class="math-step-math">x(t) = x₀ + v₀ₓ · t &implies; t = <span class="fraction"><span class="num">x_board - x₀</span><span class="den">v₀ₓ</span></span></div>
-          </div>
-          <div class="math-step-row">
-            <span class="math-step-label">Numerical Substitution</span>
-            <div class="math-step-math">t = <span class="fraction"><span class="num">${mr.xBoard.toFixed(1)} m - ${mr.x0.toFixed(1)} m</span><span class="den">${vx} m/s</span></span> = <span class="math-eval-tag">t = ${tBoard} s</span></div>
-          </div>
-        </div>
-
-        <div class="math-step-card accent-amber">
-          <div class="math-step-title">
-            <span>Step 3: Target Height H (Worksheet Question 1)</span>
-            <span class="lab-badge">Vertical Motion, aᵧ = -g</span>
-          </div>
-          <div class="math-step-desc">Substitute travel time into vertical equation of motion to find bullseye height.</div>
-          <div class="math-step-row">
-            <span class="math-step-label">Vertical Position Law</span>
-            <div class="math-step-math">y(t) = y₀ + v₀ᵧ · t - <span class="fraction"><span class="num">1</span><span class="den">2</span></span> · g · t²</div>
-          </div>
-          <div class="math-step-row">
-            <span class="math-step-label">Numerical Substitution</span>
-            <div class="math-step-math">H = ${mr.y0.toFixed(1)} m + (${vy} m/s)·(${tBoard} s) - 0.5·(${g.toFixed(1)} m/s²)·(${tBoard} s)²</div>
-          </div>
-          <div class="math-step-row">
-            <span class="math-step-label">Arithmetic Evaluation</span>
-            <div class="math-step-math">H = ${mr.y0.toFixed(1)} + ${(parseFloat(vy) * parseFloat(tBoard)).toFixed(2)} - ${(0.5 * g * parseFloat(tBoard) * parseFloat(tBoard)).toFixed(2)} = <span class="math-eval-tag" style="background: var(--accent-amber-light); color: var(--accent-amber-dark);">Target Height H = ${targetH} m</span></div>
-          </div>
-        </div>
-
-        <div class="math-step-card accent-dark">
-          <div class="math-step-title">
-            <span>Step 4: Maximum Height &amp; Ceiling Clearance (Worksheet Question 2)</span>
-            <span class="lab-badge">Full Apex Process</span>
-          </div>
-          <div class="math-step-desc">At peak altitude, vertical velocity stops momentarily: vᵧ(t_apex) = 0.</div>
-          <div class="math-step-row">
-            <span class="math-step-label">Part A: Time to Apex (from Velocity Law)</span>
-            <div class="math-step-math">vᵧ(t) = v₀ᵧ - g · t &implies; 0 = v₀ᵧ - g · t_apex &implies; t_apex = <span class="fraction"><span class="num">v₀ᵧ</span><span class="den">g</span></span></div>
-            <div class="math-step-math">t_apex = <span class="fraction"><span class="num">${vy} m/s</span><span class="den">${g.toFixed(1)} m/s²</span></span> = <span class="math-eval-tag">t_apex = ${tApex} s</span></div>
-          </div>
-          <div class="math-step-row">
-            <span class="math-step-label">Part B: Apex Altitude (substitute t_apex into Position Law)</span>
-            <div class="math-step-math">h_max = y(t_apex) = y₀ + v₀ᵧ · (t_apex) - <span class="fraction"><span class="num">1</span><span class="den">2</span></span> · g · (t_apex)²</div>
-            <div class="math-step-math">h_max = ${mr.y0.toFixed(1)} + (${vy})·(${tApex}) - 0.5·(${g.toFixed(1)})·(${tApex})² = <span class="math-eval-tag">h_max = ${hMax} m</span></div>
-          </div>
-          <div class="math-step-row">
-            <span class="math-step-label">Part C: Ceiling Collision Clearance Check</span>
-            <div class="math-step-math">Ceiling = ${mr.ceilingY.toFixed(1)} m vs h_max = ${hMax} m &implies; Margin = ${(mr.ceilingY - parseFloat(hMax)).toFixed(2)} m</div>
-          </div>
-        </div>
-
+        ${step1}
+        ${step2}
+        ${step3}
+        ${step4}
         <div class="status-badge-inline ${res && res.hitsCeiling ? 'warn' : 'safe'}" style="width: 100%; justify-content: center; margin-top: 0.35rem;">
           ${res && res.hitsCeiling ? `⚠️ Ceiling Collision: Roof at ${mr.ceilingY.toFixed(1)}m intercepts dart at x = ${res.xCeiling.toFixed(1)}m!` : `✅ Safe Workshop Clearance: Ceiling at ${mr.ceilingY.toFixed(1)}m > ${hMax}m!`}
         </div>
@@ -983,7 +1025,6 @@
       const type = cp.problemType || "cliff-building";
 
       if (type === "tennis") {
-        // Packet 6 #49: Tennis Serve Challenge
         const tNet = (cp.x1 / (cp.v0 || 1)).toFixed(3);
         const yNet = (cp.y0 - 0.5 * cp.g * parseFloat(tNet) * parseFloat(tNet)).toFixed(3);
         const tGround = Math.sqrt((2 * cp.y0) / cp.g).toFixed(3);
@@ -991,64 +1032,67 @@
         const clearsNet = parseFloat(yNet) > cp.bldgHeight;
         const inCourt = parseFloat(xLand) <= cp.x2;
 
+        const step1 = buildStepCard(
+          1, "Step 1: Given Values & Horizontal Launch", "Initial State",
+          `Horizontal serve at contact height y₀ = ${cp.y0.toFixed(1)} m at speed v₀ = ${cp.v0.toFixed(1)} m/s.`,
+          [
+            {
+              label: "Velocity Components (θ = 0°)",
+              math: katex(`v_{0x} = v_0 \\cos(0^\\circ) = ${cp.v0.toFixed(1)}\\text{ m/s}, \\quad v_{0y} = v_0 \\sin(0^\\circ) = 0\\text{ m/s}`)
+            }
+          ]
+        );
+
+        const step2 = buildStepCard(
+          2, "Step 2: Condition 1 — Net Clearance at x_net = 12.0 m", "Net Height: 0.92 m",
+          "Find time to reach the net and evaluate ball height.",
+          [
+            {
+              label: "Time to Net",
+              math: `${katex(`t_{\\text{net}} = \\frac{x_{\\text{net}}}{v_{0x}} = \\frac{${cp.x1.toFixed(1)}}{${cp.v0.toFixed(1)}} = ${tNet}\\text{ s}`)} <span class="math-eval-tag">${tNet} s</span>`
+            },
+            {
+              label: "Ball Height at Net",
+              math: `${katex(`y_{\\text{net}} = y_0 - \\frac{1}{2}g t_{\\text{net}}^2 = ${cp.y0.toFixed(1)} - 0.5(${cp.g.toFixed(1)})(${tNet})^2 = ${yNet}\\text{ m}`)} <span class="math-eval-tag">${yNet} m</span>`
+            },
+            {
+              label: "Net Clearance Comparison",
+              math: `${katex(`y_{\\text{net}} = ${yNet}\\text{ m} > ${cp.bldgHeight.toFixed(2)}\\text{ m} \\implies \\text{Margin} = +${(parseFloat(yNet) - cp.bldgHeight).toFixed(2)}\\text{ m}`)} <span class="math-eval-tag" style="color: var(--success);">Net Cleared!</span>`
+            }
+          ]
+        );
+
+        const step3 = buildStepCard(
+          3, "Step 3: Condition 2 — Service Court Landing (x ≤ 18.4 m)", "Court Boundary",
+          "Solve for total time to reach the ground and calculate landing position.",
+          [
+            {
+              label: "Ground Flight Time",
+              math: `${katex(`0 = y_0 - \\frac{1}{2}gt^2 \\implies t_{\\text{ground}} = \\sqrt{\\frac{2y_0}{g}} = \\sqrt{\\frac{2(${cp.y0.toFixed(1)})}{${cp.g.toFixed(1)}}} = ${tGround}\\text{ s}`)} <span class="math-eval-tag">${tGround} s</span>`
+            },
+            {
+              label: "Landing Distance",
+              math: `${katex(`x_{\\text{land}} = v_{0x} t_{\\text{ground}} = (${cp.v0.toFixed(1)})(${tGround}) = ${xLand}\\text{ m}`)} <span class="math-eval-tag">${xLand} m</span>`
+            },
+            {
+              label: "Service Box Comparison",
+              math: `${katex(`x_{\\text{land}} = ${xLand}\\text{ m} > ${cp.x2.toFixed(1)}\\text{ m (Service line)} \\implies \\text{Over by } ${(parseFloat(xLand) - cp.x2).toFixed(1)}\\text{ m}`)} <span class="math-eval-tag" style="color: var(--error);">LONG / OUT</span>`
+            }
+          ],
+          true
+        );
+
         mathContainer.innerHTML = `
-          <div class="math-title">
-            <span>🎾 Tennis Serve Challenge: Full Clearance Solution</span>
-            <span class="lab-badge">Horizontal Trajectory</span>
-          </div>
-
-          <div class="math-step-card">
-            <div class="math-step-title">
-              <span>Step 1: Given Values &amp; Velocity Decomposition</span>
-              <span class="lab-badge">Horizontal Serve</span>
-            </div>
-            <div class="math-step-desc">Player serves horizontally from contact height y₀ = ${cp.y0.toFixed(1)} m at speed v₀ = ${cp.v0.toFixed(1)} m/s.</div>
-            <div class="math-step-row">
-              <span class="math-step-label">Initial Components (θ = 0°)</span>
-              <div class="math-step-math">v₀ₓ = v₀ · cos(0°) = <span class="math-eval-tag">${cp.v0.toFixed(1)} m/s</span> &emsp;|&emsp; v₀ᵧ = v₀ · sin(0°) = <span class="math-eval-tag">0.0 m/s</span></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.4rem;">
+            <span style="font-size: 0.95rem; font-weight: 700; color: var(--primary-teal-dark);">🎾 Tennis Serve: Full Clearance Analysis</span>
+            <div style="display: flex; gap: 0.35rem;">
+              <button type="button" class="btn btn-sm btn-secondary" id="btnExpandAllMath" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Expand All</button>
+              <button type="button" class="btn btn-sm btn-secondary" id="btnCollapseAllMath" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Collapse All</button>
             </div>
           </div>
-
-          <div class="math-step-card">
-            <div class="math-step-title">
-              <span>Step 2: Condition 1 — Net Clearance at x_net = ${cp.x1.toFixed(1)} m</span>
-              <span class="lab-badge">Net Height: ${cp.bldgHeight.toFixed(2)} m</span>
-            </div>
-            <div class="math-step-desc">Solve for time to reach the net, then evaluate vertical ball height.</div>
-            <div class="math-step-row">
-              <span class="math-step-label">Time to Reach Net</span>
-              <div class="math-step-math">x(t) = x₀ + v₀ₓ · t &implies; t_net = <span class="fraction"><span class="num">x_net - x₀</span><span class="den">v₀ₓ</span></span> = <span class="fraction"><span class="num">${cp.x1.toFixed(1)} m</span><span class="den">${cp.v0.toFixed(1)} m/s</span></span> = <span class="math-eval-tag">${tNet} s</span></div>
-            </div>
-            <div class="math-step-row">
-              <span class="math-step-label">Height at Net (Position Law)</span>
-              <div class="math-step-math">y(t) = y₀ + v₀ᵧ · t - <span class="fraction"><span class="num">1</span><span class="den">2</span></span> · g · t² = ${cp.y0.toFixed(1)} + 0 - 0.5·(${cp.g.toFixed(1)})·(${tNet})² = <span class="math-eval-tag">y_net = ${yNet} m</span></div>
-            </div>
-            <div class="math-step-row">
-              <span class="math-step-label">Clearance Verification</span>
-              <div class="math-step-math">y_net (${yNet} m) &gt; net height (${cp.bldgHeight.toFixed(2)} m) &implies; <span class="math-eval-tag" style="color: var(--success);">Clears net by +${(parseFloat(yNet) - cp.bldgHeight).toFixed(2)} m (PASSED!)</span></div>
-            </div>
-          </div>
-
-          <div class="math-step-card accent-amber">
-            <div class="math-step-title">
-              <span>Step 3: Condition 2 — Service Court Landing (x ≤ ${cp.x2.toFixed(1)} m)</span>
-              <span class="lab-badge">Service Court Boundary</span>
-            </div>
-            <div class="math-step-desc">Find time to hit the ground (y = 0), then calculate landing distance.</div>
-            <div class="math-step-row">
-              <span class="math-step-label">Time to Reach Ground</span>
-              <div class="math-step-math">0 = y₀ - <span class="fraction"><span class="num">1</span><span class="den">2</span></span> · g · t² &implies; t_ground = <span class="fraction"><span class="num">&radic;(2·y₀)</span><span class="den">&radic;g</span></span> = &radic;<span class="fraction"><span class="num">2 · ${cp.y0.toFixed(1)}</span><span class="den">${cp.g.toFixed(1)}</span></span> = <span class="math-eval-tag">${tGround} s</span></div>
-            </div>
-            <div class="math-step-row">
-              <span class="math-step-label">Landing Horizontal Distance</span>
-              <div class="math-step-math">x_land = x₀ + v₀ₓ · t_ground = (${cp.v0.toFixed(1)} m/s) · (${tGround} s) = <span class="math-eval-tag">x_land = ${xLand} m</span></div>
-            </div>
-            <div class="math-step-row">
-              <span class="math-step-label">Service Court Comparison</span>
-              <div class="math-step-math">x_land (${xLand} m) &gt; service court limit (${cp.x2.toFixed(1)} m) &implies; <span class="math-eval-tag" style="color: var(--error);">Lands ${(parseFloat(xLand) - cp.x2).toFixed(1)} m past line!</span></div>
-            </div>
-          </div>
-
+          ${step1}
+          ${step2}
+          ${step3}
           <div class="status-badge-inline ${clearsNet && inCourt ? 'safe' : 'warn'}" style="width: 100%; justify-content: center; margin-top: 0.35rem;">
             ${clearsNet && inCourt ? '✅ Valid Serve: Clears net and lands inside service court!' : '❌ INVALID SERVE: Clears net successfully, but ball is LONG / OUT!'}
           </div>
@@ -1057,62 +1101,62 @@
       }
 
       if (type === "box-drop") {
-        // Packet 6 #46: Box Rolling Drop
         const tFall = Math.sqrt((2 * cp.y0) / cp.g).toFixed(3);
         const range = (cp.v0 * parseFloat(tFall)).toFixed(2);
 
+        const step1 = buildStepCard(
+          1, "Step 1: Given Values & Motion Independence", "Horizontal Launch",
+          `Ball rolls horizontally off desk (y₀ = ${cp.y0.toFixed(1)} m) at speed v₀ = ${cp.v0.toFixed(1)} m/s.`,
+          [
+            {
+              label: "Components",
+              math: katex(`v_{0x} = ${cp.v0.toFixed(1)}\\text{ m/s}, \\quad v_{0y} = 0\\text{ m/s}, \\quad a_x = 0, \\quad a_y = -${cp.g.toFixed(1)}\\text{ m/s}^2`)
+            }
+          ]
+        );
+
+        const step2 = buildStepCard(
+          2, "Step 2: Fall Time from Vertical Free Fall (y = 0)", "Flight Time",
+          "Vertical free fall alone dictates time of flight.",
+          [
+            {
+              label: "Position Equation",
+              math: `${katex(`0 = y_0 - \\frac{1}{2}gt^2 \\implies t_{\\text{fall}} = \\sqrt{\\frac{2y_0}{g}} = \\sqrt{\\frac{2(${cp.y0.toFixed(1)})}{${cp.g.toFixed(1)}}} = ${tFall}\\text{ s}`)} <span class="math-eval-tag">${tFall} s</span>`
+            }
+          ]
+        );
+
+        const step3 = buildStepCard(
+          3, "Step 3: Horizontal Landing Distance from Desk Base", "Range Solution",
+          "Time connects horizontal velocity to ground range.",
+          [
+            {
+              label: "Range Equation",
+              math: `${katex(`x = v_{0x} t_{\\text{fall}} = (${cp.v0.toFixed(1)})(${tFall}) = ${range}\\text{ m}`)} <span class="math-eval-tag" style="background: var(--accent-amber-light); color: var(--accent-amber-dark);">x = ${range} m</span>`
+            }
+          ],
+          true
+        );
+
         mathContainer.innerHTML = `
-          <div class="math-title">
-            <span>📦 Box Roll-Off: First-Principles Kinematics Solution</span>
-            <span class="lab-badge">Horizontal Rolling</span>
-          </div>
-
-          <div class="math-step-card">
-            <div class="math-step-title">
-              <span>Step 1: Given Values &amp; Motion Independence</span>
-              <span class="lab-badge">Horizontal Rolling</span>
-            </div>
-            <div class="math-step-desc">The ball rolls horizontally off a cubical box (height y₀ = 2.0 m) at speed v₀ = 5.0 m/s.</div>
-            <div class="math-step-row">
-              <span class="math-step-label">Initial Components</span>
-              <div class="math-step-math">v₀ₓ = 5.0 m/s &emsp;|&emsp; v₀ᵧ = 0.0 m/s &emsp;|&emsp; aₓ = 0 &emsp;|&emsp; aᵧ = -${cp.g.toFixed(1)} m/s²</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.4rem;">
+            <span style="font-size: 0.95rem; font-weight: 700; color: var(--primary-teal-dark);">📦 Box Roll-Off: Kinematic Derivation</span>
+            <div style="display: flex; gap: 0.35rem;">
+              <button type="button" class="btn btn-sm btn-secondary" id="btnExpandAllMath" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Expand All</button>
+              <button type="button" class="btn btn-sm btn-secondary" id="btnCollapseAllMath" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Collapse All</button>
             </div>
           </div>
-
-          <div class="math-step-card">
-            <div class="math-step-title">
-              <span>Step 2: Fall Time from Vertical Free Fall</span>
-              <span class="lab-badge">y(t) = 0</span>
-            </div>
-            <div class="math-step-desc">Vertical motion alone determines how long the ball is in the air.</div>
-            <div class="math-step-row">
-              <span class="math-step-label">Position Law</span>
-              <div class="math-step-math">y(t) = y₀ + v₀ᵧ · t - <span class="fraction"><span class="num">1</span><span class="den">2</span></span> · g · t² &implies; 0 = ${cp.y0.toFixed(1)} - 0.5·(${cp.g.toFixed(1)})·t²</div>
-              <div class="math-step-math">t_fall = &radic;<span class="fraction"><span class="num">2 · ${cp.y0.toFixed(1)} m</span><span class="den">${cp.g.toFixed(1)} m/s²</span></span> = <span class="math-eval-tag">t = ${tFall} s</span></div>
-            </div>
-          </div>
-
-          <div class="math-step-card accent-amber">
-            <div class="math-step-title">
-              <span>Step 3: Horizontal Landing Distance from Base</span>
-              <span class="lab-badge">Range Solution</span>
-            </div>
-            <div class="math-step-desc">Time connects horizontal velocity to distance traveled from the box base.</div>
-            <div class="math-step-row">
-              <span class="math-step-label">Horizontal Position Law</span>
-              <div class="math-step-math">x = x₀ + v₀ₓ · t_fall = 0 + (5.0 m/s) · (${tFall} s) = <span class="math-eval-tag" style="background: var(--accent-amber-light); color: var(--accent-amber-dark);">Distance x = ${range} m</span></div>
-            </div>
-          </div>
-
+          ${step1}
+          ${step2}
+          ${step3}
           <div class="status-badge-inline safe" style="width: 100%; justify-content: center; margin-top: 0.35rem;">
-            ✅ Landing Distance: Ball lands ${range} m from the base of the box!
+            ✅ Landing Distance: Ball lands ${range} m from the base of the desk!
           </div>
         `;
         return;
       }
 
       if (type === "soccer") {
-        // Packet 6 #48: Soccer Player Kick
         const vx = 20.0, vy = 12.0;
         const v0Calc = Math.hypot(vx, vy).toFixed(2);
         const thetaCalc = (Math.atan2(vy, vx) * (180 / Math.PI)).toFixed(1);
@@ -1121,57 +1165,51 @@
         const maxH = (0.5 * vy * parseFloat(tApex)).toFixed(2);
         const range = (vx * parseFloat(tFlight)).toFixed(1);
 
+        const step1 = buildStepCard(
+          1, "Step 1: Launch Speed & Angle from Velocity Components", "Vector Inversion",
+          "Given initial components: v₀ₓ = 20.0 m/s and v₀ᵧ = 12.0 m/s.",
+          [
+            {
+              label: "Speed and Angle",
+              math: `${katex(`v_0 = \\sqrt{v_{0x}^2 + v_{0y}^2} = \\sqrt{20^2 + 12^2} = ${v0Calc}\\text{ m/s}, \\quad \\theta = \\arctan\\left(\\frac{12}{20}\\right) = ${thetaCalc}^\\circ`)}`
+            }
+          ]
+        );
+
+        const step2 = buildStepCard(
+          2, "Step 2: Time to Apex & Maximum Altitude (vᵧ = 0)", "Apex Derivation",
+          "Vertical velocity ceases at the peak altitude.",
+          [
+            {
+              label: "Rise Time & Apex Height",
+              math: `${katex(`t_{\\text{apex}} = \\frac{v_{0y}}{g} = \\frac{12.0}{${cp.g.toFixed(1)}} = ${tApex}\\text{ s}, \\quad h_{\\text{max}} = \\frac{v_{0y}^2}{2g} = ${maxH}\\text{ m}`)}`
+            }
+          ]
+        );
+
+        const step3 = buildStepCard(
+          3, "Step 3: Total Flight Time & Range Downfield", "Range Solution",
+          "By parabolic symmetry over level ground, flight time is 2 × t_apex.",
+          [
+            {
+              label: "Flight Time & Range",
+              math: `${katex(`t_{\\text{flight}} = 2 t_{\\text{apex}} = ${tFlight}\\text{ s}, \\quad x = v_{0x} t_{\\text{flight}} = (20.0)(${tFlight}) = ${range}\\text{ m}`)} <span class="math-eval-tag" style="background: var(--accent-amber-light); color: var(--accent-amber-dark);">Range = ${range} m</span>`
+            }
+          ],
+          true
+        );
+
         mathContainer.innerHTML = `
-          <div class="math-title">
-            <span>⚽ Soccer Kick: Full Pedagogical Solution</span>
-            <span class="lab-badge">Ground-to-Ground</span>
-          </div>
-
-          <div class="math-step-card">
-            <div class="math-step-title">
-              <span>Step 1: Launch Speed &amp; Angle from Perpendicular Components</span>
-              <span class="lab-badge">SOH CAHTOA Inversion</span>
-            </div>
-            <div class="math-step-desc">Given initial components: v₀ₓ = 20.0 m/s and v₀ᵧ = 12.0 m/s.</div>
-            <div class="math-step-row">
-              <span class="math-step-label">Pythagorean Theorem &amp; Tangent Inversion</span>
-              <div class="math-step-math">v₀ = &radic;(v₀ₓ² + v₀ᵧ²) = &radic;(20.0² + 12.0²) = &radic;(400 + 144) = <span class="math-eval-tag">v₀ = ${v0Calc} m/s</span></div>
-              <div class="math-step-math">tan(θ) = <span class="fraction"><span class="num">v₀ᵧ</span><span class="den">v₀ₓ</span></span> = <span class="fraction"><span class="num">12.0</span><span class="den">20.0</span></span> = 0.60 &implies; <span class="math-eval-tag">θ = ${thetaCalc}°</span></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.4rem;">
+            <span style="font-size: 0.95rem; font-weight: 700; color: var(--primary-teal-dark);">⚽ Soccer Kick: Full Solution</span>
+            <div style="display: flex; gap: 0.35rem;">
+              <button type="button" class="btn btn-sm btn-secondary" id="btnExpandAllMath" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Expand All</button>
+              <button type="button" class="btn btn-sm btn-secondary" id="btnCollapseAllMath" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Collapse All</button>
             </div>
           </div>
-
-          <div class="math-step-card">
-            <div class="math-step-title">
-              <span>Step 2: Time to Apex &amp; Maximum Height (First Principles)</span>
-              <span class="lab-badge">vᵧ = 0 at Top</span>
-            </div>
-            <div class="math-step-desc">At peak altitude, vertical velocity ceases: vᵧ(t_apex) = 0.</div>
-            <div class="math-step-row">
-              <span class="math-step-label">Time to Top</span>
-              <div class="math-step-math">vᵧ(t) = v₀ᵧ - g · t &implies; 0 = 12.0 - (${cp.g.toFixed(1)}) · t_apex &implies; t_apex = <span class="fraction"><span class="num">12.0 m/s</span><span class="den">${cp.g.toFixed(1)} m/s²</span></span> = <span class="math-eval-tag">${tApex} s</span></div>
-            </div>
-            <div class="math-step-row">
-              <span class="math-step-label">Peak Altitude (Position Law)</span>
-              <div class="math-step-math">h_max = y₀ + v₀ᵧ · t_apex - <span class="fraction"><span class="num">1</span><span class="den">2</span></span> · g · t_apex² = 0 + (12.0)·(${tApex}) - 0.5·(${cp.g.toFixed(1)})·(${tApex})² = <span class="math-eval-tag">h_max = ${maxH} m</span></div>
-            </div>
-          </div>
-
-          <div class="math-step-card accent-amber">
-            <div class="math-step-title">
-              <span>Step 3: Total Flight Time &amp; Range Down the Field</span>
-              <span class="lab-badge">Range Solution</span>
-            </div>
-            <div class="math-step-desc">By parabolic flight symmetry, total air time is twice the apex rise time.</div>
-            <div class="math-step-row">
-              <span class="math-step-label">Total Flight Time</span>
-              <div class="math-step-math">t_flight = 2 · t_apex = 2 · (${tApex} s) = <span class="math-eval-tag">${tFlight} s</span></div>
-            </div>
-            <div class="math-step-row">
-              <span class="math-step-label">Total Range</span>
-              <div class="math-step-math">x = x₀ + v₀ₓ · t_flight = 0 + (20.0 m/s) · (${tFlight} s) = <span class="math-eval-tag" style="background: var(--accent-amber-light); color: var(--accent-amber-dark);">Field Range x = ${range} m</span></div>
-            </div>
-          </div>
-
+          ${step1}
+          ${step2}
+          ${step3}
           <div class="status-badge-inline safe" style="width: 100%; justify-content: center; margin-top: 0.35rem;">
             ✅ Solved: v₀ = ${v0Calc} m/s at θ = ${thetaCalc}°, flying a total range of ${range} m!
           </div>
@@ -1180,49 +1218,54 @@
       }
 
       if (type === "cliff-100m") {
-        // Packet 6 #47: 100m Cliff Launch
         const tFall = Math.sqrt((2 * 100) / cp.g).toFixed(3);
         const reqV0 = (300 / parseFloat(tFall)).toFixed(2);
 
+        const step1 = buildStepCard(
+          1, "Step 1: Given Values & Target Range", "Setup",
+          "Cliff height y₀ = 100.0 m, target range x = 300.0 m, fired horizontally (v₀ᵧ = 0).",
+          [
+            {
+              label: "Given State",
+              math: katex(`y_0 = 100.0\\text{ m}, \\quad x_{\\text{target}} = 300.0\\text{ m}, \\quad v_{0y} = 0\\text{ m/s}`)
+            }
+          ]
+        );
+
+        const step2 = buildStepCard(
+          2, "Step 2: Fall Time from 100m Height", "Vertical Fall",
+          "Time in air depends solely on vertical cliff height and gravity.",
+          [
+            {
+              label: "Fall Duration",
+              math: `${katex(`0 = y_0 - \\frac{1}{2}gt^2 \\implies t_{\\text{flight}} = \\sqrt{\\frac{2(100.0)}{${cp.g.toFixed(1)}}} = ${tFall}\\text{ s}`)} <span class="math-eval-tag">${tFall} s</span>`
+            }
+          ]
+        );
+
+        const step3 = buildStepCard(
+          3, "Step 3: Required Initial Speed v₀", "Speed Solution",
+          "Calculate horizontal velocity necessary to travel 300 m during flight time.",
+          [
+            {
+              label: "Required Velocity",
+              math: `${katex(`v_{0x} = \\frac{x_{\\text{target}}}{t_{\\text{flight}}} = \\frac{300.0\\text{ m}}{${tFall}\\text{ s}} = ${reqV0}\\text{ m/s}`)} <span class="math-eval-tag" style="background: var(--accent-amber-light); color: var(--accent-amber-dark);">Required v₀ = ${reqV0} m/s</span>`
+            }
+          ],
+          true
+        );
+
         mathContainer.innerHTML = `
-          <div class="math-title">
-            <span>⛰️ 100m Cliff Launch: Required Velocity Solution</span>
-            <span class="lab-badge">Horizontal Launch</span>
-          </div>
-
-          <div class="math-step-card">
-            <div class="math-step-title">
-              <span>Step 1: Given Values &amp; Target Setup</span>
-              <span class="lab-badge">Horizontal Cliff</span>
-            </div>
-            <div class="math-step-desc">Cliff height y₀ = 100.0 m, target landing range x = 300.0 m, fired horizontally (v₀ᵧ = 0).</div>
-          </div>
-
-          <div class="math-step-card">
-            <div class="math-step-title">
-              <span>Step 2: Fall Time from Height (Vertical Kinematics)</span>
-              <span class="lab-badge">y(t) = 0</span>
-            </div>
-            <div class="math-step-desc">Vertical free fall alone determines the total time the cannonball has to travel horizontally.</div>
-            <div class="math-step-row">
-              <span class="math-step-label">Position Law</span>
-              <div class="math-step-math">y(t) = y₀ - <span class="fraction"><span class="num">1</span><span class="den">2</span></span> · g · t² &implies; 0 = 100.0 - 0.5·(${cp.g.toFixed(1)})·t²</div>
-              <div class="math-step-math">t_flight = &radic;<span class="fraction"><span class="num">2 · 100.0 m</span><span class="den">${cp.g.toFixed(1)} m/s²</span></span> = <span class="math-eval-tag">t = ${tFall} s</span></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.4rem;">
+            <span style="font-size: 0.95rem; font-weight: 700; color: var(--primary-teal-dark);">⛰️ 100m Cliff Launch: Required Velocity</span>
+            <div style="display: flex; gap: 0.35rem;">
+              <button type="button" class="btn btn-sm btn-secondary" id="btnExpandAllMath" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Expand All</button>
+              <button type="button" class="btn btn-sm btn-secondary" id="btnCollapseAllMath" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Collapse All</button>
             </div>
           </div>
-
-          <div class="math-step-card accent-amber">
-            <div class="math-step-title">
-              <span>Step 3: Required Initial Velocity v₀</span>
-              <span class="lab-badge">Time as Bridge</span>
-            </div>
-            <div class="math-step-desc">Calculate the horizontal speed needed to cover 300 m in ${tFall} s.</div>
-            <div class="math-step-row">
-              <span class="math-step-label">Horizontal Position Law</span>
-              <div class="math-step-math">x = x₀ + v₀ₓ · t &implies; v₀ₓ = <span class="fraction"><span class="num">x_target</span><span class="den">t_flight</span></span> = <span class="fraction"><span class="num">300.0 m</span><span class="den">${tFall} s</span></span> = <span class="math-eval-tag" style="background: var(--accent-amber-light); color: var(--accent-amber-dark);">Required v₀ = ${reqV0} m/s</span></div>
-            </div>
-          </div>
-
+          ${step1}
+          ${step2}
+          ${step3}
           <div class="status-badge-inline safe" style="width: 100%; justify-content: center; margin-top: 0.35rem;">
             ✅ Required Launch Velocity: v₀ = ${reqV0} m/s guarantees hitting the 300m target!
           </div>
@@ -1230,7 +1273,7 @@
         return;
       }
 
-      // Default: Classroom Cliff & 70m Building Problem
+      // Default: Classroom Notes Cliff & 70m Building
       const res = cp.hitResult;
       const maxH = res ? res.maxH.toFixed(2) : "342.05";
       const tApex = res ? res.tApex.toFixed(2) : "2.10";
@@ -1239,70 +1282,68 @@
       const vx = res ? res.vx.toFixed(1) : "36.4";
       const vy = res ? res.vy.toFixed(1) : "21.0";
 
+      const step1 = buildStepCard(
+        1, "Step 1: Velocity Decomposition (SOH CAHTOA)", "Components",
+        `Fired from cliff (y₀ = ${cp.y0} m) at speed v₀ = ${cp.v0.toFixed(1)} m/s at angle θ = ${cp.thetaDeg.toFixed(1)}°.`,
+        [
+          {
+            label: "Trigonometric Components",
+            math: katex(`v_{0x} = v_0 \\cos(\\theta) = (${cp.v0.toFixed(1)}) \\cos(${cp.thetaDeg.toFixed(1)}^\\circ) = ${vx}\\text{ m/s}, \\quad v_{0y} = (${cp.v0.toFixed(1)}) \\sin(${cp.thetaDeg.toFixed(1)}^\\circ) = ${vy}\\text{ m/s}`)
+          }
+        ]
+      );
+
+      const step2 = buildStepCard(
+        2, "Step 2: Maximum Height h_max (vᵧ = 0 at Peak)", "Apex",
+        "Vertical velocity ceases at apex: vᵧ(t_apex) = 0.",
+        [
+          {
+            label: "Apex Rise Time & Height",
+            math: `${katex(`t_{\\text{apex}} = \\frac{v_{0y}}{g} = \\frac{${vy}}{${cp.g.toFixed(1)}} = ${tApex}\\text{ s}, \\quad h_{\\text{max}} = y_0 + \\frac{v_{0y}^2}{2g} = ${cp.y0} + \\frac{(${vy})^2}{2(${cp.g.toFixed(1)})} = ${maxH}\\text{ m}`)} <span class="math-eval-tag">Apex = ${maxH} m</span>`
+          }
+        ]
+      );
+
+      const step3 = buildStepCard(
+        3, `Step 3: Time as Bridge to Far Wall (x₂ = ${cp.x2} m)`, "Bridge Time",
+        "Horizontal velocity is constant. Find flight time to reach the far obstacle edge.",
+        [
+          {
+            label: "Travel Time to Far Wall",
+            math: `${katex(`t_2 = \\frac{x_2 - x_0}{v_{0x}} = \\frac{${cp.x2} - 0}{${vx}} = ${t2}\\text{ s}`)} <span class="math-eval-tag">${t2} s</span>`
+          }
+        ],
+        true
+      );
+
+      const step4 = buildStepCard(
+        4, "Step 4: Building Roof Clearance Check", "Roof Clearance",
+        `Evaluate vertical position at t = ${t2} s and compare with building height (${cp.bldgHeight} m).`,
+        [
+          {
+            label: "Vertical Position at Far Edge",
+            math: `${katex(`y(t_2) = y_0 + v_{0y} t_2 - \\frac{1}{2}g t_2^2 = ${cp.y0} + (${vy})(${t2}) - 0.5(${cp.g.toFixed(1)})(${t2})^2 = ${y2}\\text{ m}`)} <span class="math-eval-tag" style="background: var(--primary-teal-light); color: var(--primary-teal-dark);">y = ${y2} m</span>`
+          },
+          {
+            label: "Roof Clearance Margin",
+            math: `${katex(`y(${t2}\\text{ s}) = ${y2}\\text{ m} > ${cp.bldgHeight}\\text{ m} \\implies \\text{Roof Clearance} = +${(parseFloat(y2) - cp.bldgHeight).toFixed(1)}\\text{ m}`)} <span class="math-eval-tag" style="color: var(--success);">SAFE!</span>`
+          }
+        ],
+        false, true
+      );
+
       mathContainer.innerHTML = `
-        <div class="math-title">
-          <span>📋 Classroom Notes: Cliff &amp; 70m Building Obstacle</span>
-          <span class="lab-badge">Lecture Notes (p. 7–8, 13–14)</span>
-        </div>
-
-        <div class="math-step-card">
-          <div class="math-step-title">
-            <span>Step 1: Velocity Decomposition (SOH CAHTOA)</span>
-            <span class="lab-badge">Initial Components</span>
-          </div>
-          <div class="math-step-desc">Fired from cliff (y₀ = ${cp.y0} m) at speed v₀ = ${cp.v0.toFixed(1)} m/s at angle θ = ${cp.thetaDeg.toFixed(1)}°.</div>
-          <div class="math-step-row">
-            <span class="math-step-label">Trigonometric Formulas</span>
-            <div class="math-step-math">v₀ₓ = v₀ · cos(θ) = (${cp.v0.toFixed(1)} m/s) · cos(${cp.thetaDeg.toFixed(1)}°) = <span class="math-eval-tag">v₀ₓ = ${vx} m/s</span></div>
-            <div class="math-step-math">v₀ᵧ = v₀ · sin(θ) = (${cp.v0.toFixed(1)} m/s) · sin(${cp.thetaDeg.toFixed(1)}°) = <span class="math-eval-tag">v₀ᵧ = ${vy} m/s</span></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.4rem;">
+          <span style="font-size: 0.95rem; font-weight: 700; color: var(--primary-teal-dark);">📋 Classroom Notes: Cliff &amp; 70m Building</span>
+          <div style="display: flex; gap: 0.35rem;">
+            <button type="button" class="btn btn-sm btn-secondary" id="btnExpandAllMath" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Expand All</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="btnCollapseAllMath" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Collapse All</button>
           </div>
         </div>
-
-        <div class="math-step-card">
-          <div class="math-step-title">
-            <span>Step 2: Part a) Maximum Height h_max (Full Process via vᵧ = 0)</span>
-            <span class="lab-badge">Apex Derivation</span>
-          </div>
-          <div class="math-step-desc">At peak height, vertical velocity ceases: vᵧ(t_up) = 0.</div>
-          <div class="math-step-row">
-            <span class="math-step-label">Part A: Time to Apex</span>
-            <div class="math-step-math">vᵧ(t) = v₀ᵧ - g · t &implies; 0 = ${vy} - (${cp.g.toFixed(1)}) · t_up &implies; t_up = <span class="fraction"><span class="num">${vy} m/s</span><span class="den">${cp.g.toFixed(1)} m/s²</span></span> = <span class="math-eval-tag">t_up = ${tApex} s</span></div>
-          </div>
-          <div class="math-step-row">
-            <span class="math-step-label">Part B: Maximum Altitude (Substitute t_up into Position Law)</span>
-            <div class="math-step-math">h_max = y(t_up) = y₀ + v₀ᵧ · (t_up) - <span class="fraction"><span class="num">1</span><span class="den">2</span></span> · g · (t_up)²</div>
-            <div class="math-step-math">h_max = ${cp.y0} + (${vy})·(${tApex}) - 0.5·(${cp.g.toFixed(1)})·(${tApex})² = <span class="math-eval-tag">h_max = ${maxH} m</span></div>
-          </div>
-        </div>
-
-        <div class="math-step-card accent-amber">
-          <div class="math-step-title">
-            <span>Step 3: Part b) Time as Bridge to Far Wall (x₂ = ${cp.x2} m)</span>
-            <span class="lab-badge">Obstacle Flight Time</span>
-          </div>
-          <div class="math-step-desc">Solve for travel time to reach the far edge of the obstacle building.</div>
-          <div class="math-step-row">
-            <span class="math-step-label">Horizontal Kinematic Law</span>
-            <div class="math-step-math">x(t) = x₀ + v₀ₓ · t &implies; t = <span class="fraction"><span class="num">x₂ - x₀</span><span class="den">v₀ₓ</span></span> = <span class="fraction"><span class="num">${cp.x2} m - 0 m</span><span class="den">${vx} m/s</span></span> = <span class="math-eval-tag">t = ${t2} s</span></div>
-          </div>
-        </div>
-
-        <div class="math-step-card accent-dark">
-          <div class="math-step-title">
-            <span>Step 4: Building Roof Clearance Check</span>
-            <span class="lab-badge">Height Comparison</span>
-          </div>
-          <div class="math-step-desc">Evaluate vertical position at t = ${t2} s and compare with building height (${cp.bldgHeight} m).</div>
-          <div class="math-step-row">
-            <span class="math-step-label">Vertical Position at Far Edge</span>
-            <div class="math-step-math">y(t) = y₀ + v₀ᵧ · t - <span class="fraction"><span class="num">1</span><span class="den">2</span></span> · g · t² = ${cp.y0} + (${vy})·(${t2}) - 0.5·(${cp.g.toFixed(1)})·(${t2})² = <span class="math-eval-tag" style="background: var(--primary-teal-light); color: var(--primary-teal-dark);">y = ${y2} m</span></div>
-          </div>
-          <div class="math-step-row">
-            <span class="math-step-label">Clearance Margin</span>
-            <div class="math-step-math">y (${y2} m) &gt; building height (${cp.bldgHeight} m) &implies; <span class="math-eval-tag" style="color: var(--success);">Roof Clearance: +${(parseFloat(y2) - cp.bldgHeight).toFixed(1)} m (SAFE!)</span></div>
-          </div>
-        </div>
-
+        ${step1}
+        ${step2}
+        ${step3}
+        ${step4}
         <div class="status-badge-inline ${res && res.clearsBuilding ? 'safe' : 'warn'}" style="width: 100%; justify-content: center; margin-top: 0.35rem;">
           ${res && res.clearsBuilding ? `✅ Projectile Clears Building: Passes ${cp.x2}m edge at altitude y = ${y2}m (> ${cp.bldgHeight}m roof)!` : `❌ Building Collision: Strikes ${res ? res.collisionType : 'wall'}!`}
         </div>
@@ -1321,45 +1362,59 @@
       const tApex = (decomp.vy > 0 ? decomp.vy / g : 0).toFixed(2);
       const maxH = ProjectilesPhysics.calculateMaxHeight(y0, decomp.vy, g).toFixed(1);
 
+      const step1 = buildStepCard(
+        1, "Step 1: Velocity Decomposition (SOH CAHTOA)", "Components",
+        "Resolve 2D launch velocity into perpendicular components.",
+        [
+          {
+            label: "Trigonometric Components",
+            math: katex(`v_{0x} = (${v0.toFixed(1)}) \\cos(${thetaDeg.toFixed(1)}^\\circ) = ${decomp.vx.toFixed(2)}\\text{ m/s}, \\quad v_{0y} = (${v0.toFixed(1)}) \\sin(${thetaDeg.toFixed(1)}^\\circ) = ${decomp.vy.toFixed(2)}\\text{ m/s}`)
+          }
+        ]
+      );
+
+      const step2 = buildStepCard(
+        2, "Step 2: Peak Altitude & Rise Time (vᵧ = 0)", "Apex",
+        "Calculate rise time and maximum height reached.",
+        [
+          {
+            label: "Apex Rise Time & Altitude",
+            math: `${katex(`t_{\\text{apex}} = \\frac{v_{0y}}{g} = ${tApex}\\text{ s}, \\quad h_{\\text{max}} = y_0 + \\frac{v_{0y}^2}{2g} = ${maxH}\\text{ m}`)} <span class="math-eval-tag">Apex = ${maxH} m</span>`
+          }
+        ]
+      );
+
+      const step3 = buildStepCard(
+        3, "Step 3: Total Flight Time & Range", "Ground Impact",
+        "Solve for total time until ground landing (y = 0) and total horizontal range.",
+        [
+          {
+            label: "Flight Time & Range",
+            math: `${katex(`t_{\\text{flight}} = ${tFlight.toFixed(2)}\\text{ s}, \\quad \\text{Range } x = v_{0x} t_{\\text{flight}} = ${range}\\text{ m}`)} <span class="math-eval-tag" style="background: var(--accent-amber-light); color: var(--accent-amber-dark);">${range} m</span>`
+          }
+        ],
+        true
+      );
+
       mathContainer.innerHTML = `
-        <div class="math-title">
-          <span>🧪 Free Sandbox Kinematics: First-Principles Derivation</span>
-          <span class="lab-badge">Ideal Physics</span>
-        </div>
-
-        <div class="math-step-card">
-          <div class="math-step-title">
-            <span>Step 1: Velocity Decomposition (SOH CAHTOA)</span>
-            <span class="lab-badge">Vector Components</span>
-          </div>
-          <div class="math-step-row">
-            <div class="math-step-math">v₀ₓ = (${v0.toFixed(1)} m/s) · cos(${thetaDeg.toFixed(1)}°) = <span class="math-eval-tag">${decomp.vx.toFixed(2)} m/s</span></div>
-            <div class="math-step-math">v₀ᵧ = (${v0.toFixed(1)} m/s) · sin(${thetaDeg.toFixed(1)}°) = <span class="math-eval-tag">${decomp.vy.toFixed(2)} m/s</span></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.4rem;">
+          <span style="font-size: 0.95rem; font-weight: 700; color: var(--primary-teal-dark);">🧪 Free Sandbox: Kinematic Derivation</span>
+          <div style="display: flex; gap: 0.35rem;">
+            <button type="button" class="btn btn-sm btn-secondary" id="btnExpandAllMath" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Expand All</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="btnCollapseAllMath" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Collapse All</button>
           </div>
         </div>
-
-        <div class="math-step-card">
-          <div class="math-step-title">
-            <span>Step 2: Peak Altitude &amp; Rise Time (vᵧ = 0)</span>
-            <span class="lab-badge">Apex Derivation</span>
-          </div>
-          <div class="math-step-row">
-            <div class="math-step-math">t_apex = <span class="fraction"><span class="num">v₀ᵧ</span><span class="den">g</span></span> = <span class="fraction"><span class="num">${decomp.vy.toFixed(2)} m/s</span><span class="den">${g.toFixed(2)} m/s²</span></span> = <span class="math-eval-tag">${tApex} s</span></div>
-            <div class="math-step-math">h_max = y₀ + v₀ᵧ · t_apex - 0.5 · g · t_apex² = <span class="math-eval-tag">${maxH} m</span></div>
-          </div>
-        </div>
-
-        <div class="math-step-card accent-amber">
-          <div class="math-step-title">
-            <span>Step 3: Flight Time &amp; Range</span>
-            <span class="lab-badge">Ground Impact</span>
-          </div>
-          <div class="math-step-row">
-            <div class="math-step-math">Total Flight Time: <span class="math-eval-tag">${tFlight.toFixed(2)} s</span> &emsp;|&emsp; Total Range: <span class="math-eval-tag" style="background: var(--accent-amber-light); color: var(--accent-amber-dark);">${range} m</span></div>
-          </div>
-        </div>
+        ${step1}
+        ${step2}
+        ${step3}
       `;
     }
+
+    // Attach listeners for Expand All / Collapse All in math panel
+    const btnExpand = document.getElementById("btnExpandAllMath");
+    const btnCollapse = document.getElementById("btnCollapseAllMath");
+    if (btnExpand) btnExpand.onclick = () => document.querySelectorAll(".math-step-card").forEach(c => c.classList.add("open"));
+    if (btnCollapse) btnCollapse.onclick = () => document.querySelectorAll(".math-step-card").forEach(c => c.classList.remove("open"));
 
     // Update Cornell T-Chart
     const decomp = ProjectilesPhysics.decomposeVelocity(v0, thetaDeg);
@@ -1367,11 +1422,109 @@
     const tcAy = document.getElementById("tcAy");
     const sohCalcVx = document.getElementById("sohCalcVx");
     const sohCalcVy = document.getElementById("sohCalcVy");
+    const tcSubX = document.getElementById("tcSubX");
+    const tcSubVy = document.getElementById("tcSubVy");
+    const tcSubY = document.getElementById("tcSubY");
 
     if (tcVx) tcVx.textContent = decomp.vx.toFixed(1);
     if (tcAy) tcAy.textContent = (-g).toFixed(1);
     if (sohCalcVx) sohCalcVx.textContent = `${v0.toFixed(1)} · cos(${thetaDeg.toFixed(1)}°) = ${decomp.vx.toFixed(2)} m/s`;
     if (sohCalcVy) sohCalcVy.textContent = `${v0.toFixed(1)} · sin(${thetaDeg.toFixed(1)}°) = ${decomp.vy.toFixed(2)} m/s`;
+    if (tcSubX) tcSubX.textContent = `x = ${x0.toFixed(1)} + (${decomp.vx.toFixed(1)})·t`;
+    if (tcSubVy) tcSubVy.textContent = `vᵧ = ${decomp.vy.toFixed(1)} - (${g.toFixed(1)})·t`;
+    if (tcSubY) tcSubY.textContent = `y = ${y0.toFixed(1)} + (${decomp.vy.toFixed(1)})·t - ${(0.5 * g).toFixed(1)}·t²`;
+  }
+
+  // ==========================================================================
+  // Inquiry Scenario Card & Pedagogical Problem Prompts
+  // ==========================================================================
+
+  function updateInquiryScenarioCard(mode, presetKey = "") {
+    const titleEl = document.getElementById("inquiryTitle");
+    const tagEl = document.getElementById("inquiryTag");
+    const narrativeEl = document.getElementById("inquiryNarrative");
+    const listEl = document.getElementById("inquiryQuestionsList");
+    if (!titleEl || !tagEl || !narrativeEl || !listEl) return;
+
+    if (mode === "monkey") {
+      titleEl.innerHTML = "🐵 Feed the Monkey: Free-Fall Intercept Challenge";
+      tagEl.textContent = "Target Intercept";
+      narrativeEl.innerHTML = "A hungry monkey hangs from a tree branch at horizontal distance <var>x<sub>m</sub></var> and height <var>y<sub>m</sub></var>. A zookeeper aims a cannon directly along the visual line of sight and fires a banana with launch speed <var>v₀</var>. The exact millisecond the cannon fires, the monkey lets go and drops vertically in free fall.";
+      listEl.innerHTML = `
+        <li><strong>(a) Aim Direction:</strong> Where must the cannon be aimed (above, directly at, or below the monkey) to ensure the banana intercepts the falling monkey before reaching the ground?</li>
+        <li><strong>(b) Speed Invariance:</strong> How does changing the launch velocity <var>v₀</var> affect whether an intercept occurs (assuming the banana reaches distance <var>x<sub>m</sub></var> prior to ground impact)?</li>
+        <li><strong>(c) Deflection from Sight Line:</strong> In time <var>t</var>, how far do both the banana and monkey fall below the straight unaccelerated line of sight? (Recall <var>&Delta;y = &frac12;gt&sup2;</var>).</li>
+        <li><strong>(d) Minimum Catch Velocity:</strong> Calculate the minimum initial speed <var>v₀</var> needed so the intercept occurs at or above ground level (<var>y &ge; 0</var>).</li>
+      `;
+    } else if (mode === "mark-rober") {
+      titleEl.innerHTML = "🎯 Mark Rober's Dartboard Kinematics Challenge";
+      tagEl.textContent = "Clearance & Intercept";
+      narrativeEl.innerHTML = "A player tosses a dart from release height <var>y₀</var> at launch speed <var>v₀</var> and angle <var>&alpha;</var> toward a target dartboard at horizontal distance <var>x<sub>board</sub></var>. A low ceiling / overhead obstacle stands at height <var>H<sub>ceiling</sub></var>.";
+      listEl.innerHTML = `
+        <li><strong>(a) Low Ceiling Clearance:</strong> Does the dart clear the low overhead ceiling beam at its trajectory apex, or does it strike the obstacle? Calculate peak altitude <var>y<sub>max</sub></var>.</li>
+        <li><strong>(b) Dartboard Impact Height:</strong> At what exact height <var>y</var> does the dart impact the dartboard located at <var>x = x<sub>board</sub></var>?</li>
+        <li><strong>(c) Impact Velocity &amp; Penetration Angle:</strong> What are the velocity components <var>v<sub>x</sub></var> and <var>v<sub>y</sub></var> upon striking the board, and at what angle does the dart arrive?</li>
+        <li><strong>(d) Optimum Launch Angle:</strong> What launch angle maximizes the target height or ensures safe ceiling clearance?</li>
+      `;
+    } else if (mode === "classroom") {
+      const pType = presetKey || (state.classroom ? state.classroom.problemType : "cliff-building");
+      if (pType === "tennis") {
+        titleEl.innerHTML = "🎾 Tennis Flat Serve Net Clearance";
+        tagEl.textContent = "Horizontal Launch";
+        narrativeEl.innerHTML = "A tennis player strikes a horizontal serve (<var>&theta; = 0&deg;</var>) from baseline height <var>y₀ = 2.50&text; m</var> at speed <var>v₀ = 40.0&text; m/s</var>. The net is <var>12.0&text; m</var> away with height <var>0.92&text; m</var>, and the service box boundary is <var>18.4&text; m</var> from the server.";
+        listEl.innerHTML = `
+          <li><strong>(a) Net Clearance:</strong> Does the tennis ball clear the 0.92 m net at distance <var>x = 12.0&text; m</var>? Calculate the vertical clearance margin.</li>
+          <li><strong>(b) Service Box Landing:</strong> Does the serve land within the legal service box boundary (<var>x &le; 18.4&text; m</var>)? What is its exact court impact distance?</li>
+          <li><strong>(c) Impact Velocity:</strong> Find the magnitude and direction of the velocity vector when the ball hits the court surface.</li>
+        `;
+      } else if (pType === "soccer") {
+        titleEl.innerHTML = "⚽ Soccer Free Kick over Defensive Wall";
+        tagEl.textContent = "Angled Projection";
+        narrativeEl.innerHTML = "A soccer player takes a free kick from ground level (<var>y₀ = 0</var>) at initial speed <var>v₀ = 23.3&text; m/s</var> at an elevation angle of <var>&theta; = 31.0&deg;</var>. A defensive wall of height <var>2.44&text; m</var> stands between <var>x = 49.0&text; m</var> and <var>52.0&text; m</var>.";
+        listEl.innerHTML = `
+          <li><strong>(a) Defensive Wall Clearance:</strong> Does the ball clear the top of the defensive wall? Calculate the height of the ball at <var>x = 49.0&text; m</var> and <var>x = 52.0&text; m</var>.</li>
+          <li><strong>(b) Total Range &amp; Hang Time:</strong> How long does the ball remain airborne, and at what horizontal distance does it hit the ground?</li>
+          <li><strong>(c) Peak Height:</strong> What is the maximum altitude reached by the soccer ball above the pitch?</li>
+        `;
+      } else if (pType === "box-drop") {
+        titleEl.innerHTML = "📦 Tabletop Roll-Off Kinematics";
+        tagEl.textContent = "Horizontal Launch";
+        narrativeEl.innerHTML = "A laboratory block slides horizontally off the flat edge of a table at height <var>y₀ = 2.00&text; m</var> with speed <var>v₀ = 5.00&text; m/s</var> (<var>&theta; = 0&deg;</var>).";
+        listEl.innerHTML = `
+          <li><strong>(a) Time in Free Fall:</strong> Calculate the time required for the block to fall from the tabletop to the floor (<var>y = 0</var>).</li>
+          <li><strong>(b) Horizontal Displacement:</strong> How far from the edge of the table (<var>&Delta;x</var>) does the block land?</li>
+          <li><strong>(c) Impact Velocity:</strong> Determine the final velocity vector (magnitude and angle below horizontal) immediately prior to landing.</li>
+        `;
+      } else if (pType === "cliff-100m") {
+        titleEl.innerHTML = "⛰️ 100m Elevated Cliff Launch (Target Range)";
+        tagEl.textContent = "Target Range";
+        narrativeEl.innerHTML = "A projectile is launched horizontally from the edge of a vertical cliff of height <var>y₀ = 100&text; m</var> toward a target placed on the ground at horizontal distance <var>x = 300&text; m</var>.";
+        listEl.innerHTML = `
+          <li><strong>(a) Free Fall Duration:</strong> How long does it take for any object dropped or horizontally fired from <var>100&text; m</var> to hit the ground?</li>
+          <li><strong>(b) Required Launch Speed:</strong> What horizontal launch velocity <var>v₀</var> must be imparted to hit the target at <var>x = 300&text; m</var>?</li>
+          <li><strong>(c) Final Velocity at Impact:</strong> Compute the impact speed and angle with the ground upon target contact.</li>
+        `;
+      } else {
+        titleEl.innerHTML = "🏔️ Cliff Launch over Obstacle Building";
+        tagEl.textContent = "Classroom Problem";
+        narrativeEl.innerHTML = "A projectile is launched from the top edge of a <var>320&text; m</var> cliff at speed <var>v₀ = 42.0&text; m/s</var> angled at <var>&theta; = 30.0&deg;</var> above horizontal. Standing between <var>x = 230&text; m</var> and <var>x = 310&text; m</var> is a building of height <var>70.0&text; m</var>.";
+        listEl.innerHTML = `
+          <li><strong>(a) Peak Altitude &amp; Rise Time:</strong> What is the maximum height reached by the projectile above the ground, and at what time is apex achieved?</li>
+          <li><strong>(b) Obstacle Clearance:</strong> Does the projectile clear the roof of the building at its front face (<var>x = 230&text; m</var>) and back face (<var>x = 310&text; m</var>)? Calculate clearance heights.</li>
+          <li><strong>(c) Total Flight Time:</strong> Solve the quadratic position equation for total time of flight until ground impact (<var>y = 0</var>).</li>
+          <li><strong>(d) Final Impact Velocity &amp; Range:</strong> Determine the horizontal range and the speed and angle upon ground landing.</li>
+        `;
+      }
+    } else {
+      titleEl.innerHTML = "🧪 2D Projectile Kinematics Sandbox";
+      tagEl.textContent = "Exploration";
+      narrativeEl.innerHTML = "Explore arbitrary 2D projectile trajectories with custom initial launch velocity <var>v₀</var>, angle <var>&theta;</var>, initial height <var>y₀</var>, and gravitational acceleration <var>g</var>.";
+      listEl.innerHTML = `
+        <li><strong>(a) Angle of Maximum Range:</strong> Investigate how the launch angle <var>&theta;</var> maximizing range shifts from <var>45&deg;</var> when launch height <var>y₀ &gt; 0</var>.</li>
+        <li><strong>(b) Independence of Components:</strong> Observe how horizontal velocity <var>v<sub>x</sub></var> remains strictly constant while vertical velocity <var>v<sub>y</sub></var> decreases linearly at rate <var>-g</var>.</li>
+        <li><strong>(c) Parabolic Path Equation:</strong> Verify the trajectory equation <var>y(x) = y₀ + x\tan\theta - \frac{g x²}{2 v₀² \cos²\theta}</var> by inspecting coordinates along the path.</li>
+      `;
+    }
   }
 
   // ==========================================================================
