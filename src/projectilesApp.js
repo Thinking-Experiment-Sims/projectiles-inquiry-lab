@@ -19,6 +19,11 @@
   const ctx = canvas.getContext("2d");
   const canvasViewport = document.getElementById("canvasViewport");
 
+  // Stacked Kinematics Graphs
+  const graphsCanvas = document.getElementById("graphsCanvas");
+  const graphsCtx = graphsCanvas ? graphsCanvas.getContext("2d") : null;
+  const graphsCanvasContainer = document.getElementById("graphsCanvasContainer");
+
   // Playback Buttons
   const btnFire = document.getElementById("btnFire");
   const btnFireText = document.getElementById("btnFireText");
@@ -258,6 +263,21 @@
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
+
+    if (graphsCanvas && graphsCanvasContainer) {
+      const rectG = graphsCanvasContainer.getBoundingClientRect();
+      const gWidth = rectG.width || displayWidth;
+      const gHeight = 420;
+      graphsCanvas.width = gWidth * dpr;
+      graphsCanvas.height = gHeight * dpr;
+      graphsCanvas.style.width = gWidth + "px";
+      graphsCanvas.style.height = gHeight + "px";
+      if (graphsCtx) {
+        graphsCtx.setTransform(1, 0, 0, 1, 0, 0);
+        graphsCtx.scale(dpr, dpr);
+      }
+    }
+
     render();
   }
 
@@ -490,11 +510,16 @@
       return;
     }
 
-    if (!lastTimestamp) lastTimestamp = timestamp;
+    if (!lastTimestamp) {
+      lastTimestamp = timestamp;
+      animFrameId = requestAnimationFrame(runSimulationLoop);
+      return;
+    }
+
     const realDt = Math.min((timestamp - lastTimestamp) / 1000, 0.1);
     lastTimestamp = timestamp;
 
-    if (!state.isPaused) {
+    if (!state.isPaused && realDt > 0) {
       stepSimulation(realDt * state.playbackSpeed);
     }
 
@@ -541,7 +566,7 @@
           logTrial("Feed the Monkey", m.v0, m.thetaDeg, tHit, m.bananaPos.x, m.bananaPos.y, `MISS (${dir})`);
         }
         pauseSimulation();
-      } else if (pos.y <= 0 && !state.hasEnded) {
+      } else if (t > 0.05 && pos.y <= 0 && !state.hasEnded) {
         state.hasEnded = true;
         sfx.playMiss();
         setBanner("miss", "GROUND IMPACT", `Banana struck the ground before reaching monkey.`);
@@ -615,7 +640,7 @@
           pauseSimulation();
           updateTelemetryHUD();
           return;
-        } else if (!state.hasEnded && pos.y <= 0) {
+        } else if (!state.hasEnded && t > 0.05 && pos.y <= 0) {
           state.hasEnded = true;
           sfx.playHit();
           const vel = ProjectilesPhysics.getVelocityAtTime({ vx: decomp.vx, vy: decomp.vy, g: cp.g, t: t });
@@ -759,7 +784,7 @@
 
       } else {
         // box-drop, cliff-100m, and anything else: just stop at ground
-        if (pos.y <= 0 && !state.hasEnded) {
+        if (t > 0.05 && pos.y <= 0 && !state.hasEnded) {
           state.hasEnded = true;
           sfx.playHit();
           setBanner("hit", "GROUND IMPACT", `Landed on ground at x = ${pos.x.toFixed(1)}m.`);
@@ -781,7 +806,7 @@
       });
       sb.projPos = pos;
 
-      if (pos.y <= 0 && !state.hasEnded) {
+      if (t > 0.05 && pos.y <= 0 && !state.hasEnded) {
         state.hasEnded = true;
         sfx.playHit();
         setBanner("ready", "FLIGHT COMPLETE", `Landed at x = ${pos.x.toFixed(1)}m, flight time = ${t.toFixed(2)}s.`);
@@ -1776,6 +1801,429 @@
   }
 
   // ==========================================================================
+  // Stacked Synchronized Kinematics Graphs (Position x & y, Velocity vx & vy, Acceleration ax & ay)
+  // Blue for Horizontal Motion (x, vx, ax), Red for Vertical Motion (y, vy, ay)
+  // ==========================================================================
+
+  function getKinematicsProfile() {
+    let x0 = 0, y0 = 0, v0 = 20, thetaDeg = 45, g = 9.80;
+    let flightTime = 2.0;
+    let monkeyY0 = null;
+
+    if (state.mode === "monkey") {
+      const m = state.monkey;
+      x0 = m.x0; y0 = m.y0; v0 = m.v0; thetaDeg = m.thetaDeg; g = m.g;
+      monkeyY0 = m.ym;
+      flightTime = (m.hitResult && m.hitResult.tIntercept > 0) ? m.hitResult.tIntercept : 2.0;
+    } else if (state.mode === "mark-rober") {
+      const mr = state.markRober;
+      x0 = mr.x0; y0 = mr.y0; v0 = mr.v0; thetaDeg = mr.alphaDeg; g = mr.g;
+      flightTime = (mr.hitResult && mr.hitResult.tBoard > 0) ? mr.hitResult.tBoard : 1.0;
+    } else if (state.mode === "classroom") {
+      const cp = state.classroom;
+      x0 = cp.x0; y0 = cp.y0; v0 = cp.v0; thetaDeg = cp.thetaDeg; g = cp.g;
+      flightTime = (cp.hitResult && cp.hitResult.totalFlightTime > 0) ? cp.hitResult.totalFlightTime : 3.0;
+    } else {
+      const sb = state.sandbox;
+      x0 = sb.x0; y0 = sb.y0; v0 = sb.v0; thetaDeg = sb.thetaDeg; g = sb.g;
+      const vy0 = v0 * Math.sin(thetaDeg * Math.PI / 180);
+      flightTime = g > 0 ? (vy0 + Math.sqrt(Math.max(0, vy0 * vy0 + 2 * g * y0))) / g : 3.0;
+      if (!isFinite(flightTime) || flightTime <= 0) flightTime = 3.0;
+    }
+
+    const rad = thetaDeg * Math.PI / 180;
+    const v0x = v0 * Math.cos(rad);
+    const v0y = v0 * Math.sin(rad);
+    const tMax = Math.max(1.0, Math.ceil(Math.max(flightTime * 1.15, state.simTime * 1.1) * 10) / 10);
+
+    return {
+      x0, y0, v0, thetaDeg, g, v0x, v0y, flightTime, tMax, monkeyY0
+    };
+  }
+
+  function updatePositionsForTime(t) {
+    if (state.mode === "monkey") {
+      const m = state.monkey;
+      const decomp = ProjectilesPhysics.decomposeVelocity(m.v0, m.thetaDeg);
+      m.bananaPos = ProjectilesPhysics.getPositionAtTime({
+        x0: m.x0, y0: m.y0, vx: decomp.vx, vy: decomp.vy, g: m.g, t
+      });
+      m.monkeyY = Math.max(0, m.ym - 0.5 * m.g * t * t);
+      if (m.hitResult && t >= m.hitResult.tIntercept && m.hitResult.isHit) {
+        m.isCaught = true;
+      } else {
+        m.isCaught = false;
+      }
+    } else if (state.mode === "mark-rober") {
+      const mr = state.markRober;
+      const decomp = ProjectilesPhysics.decomposeVelocity(mr.v0, mr.alphaDeg);
+      mr.dartPos = ProjectilesPhysics.getPositionAtTime({
+        x0: mr.x0, y0: mr.y0, vx: decomp.vx, vy: decomp.vy, g: mr.g, t
+      });
+      const targetH = mr.hitResult.targetHeightH;
+      const tBoard = mr.hitResult.tBoard;
+      mr.boardY = mr.y0 + (targetH - mr.y0) * Math.min(1, t / tBoard);
+    } else if (state.mode === "classroom") {
+      const cp = state.classroom;
+      const decomp = ProjectilesPhysics.decomposeVelocity(cp.v0, cp.thetaDeg);
+      cp.projPos = ProjectilesPhysics.getPositionAtTime({
+        x0: cp.x0, y0: cp.y0, vx: decomp.vx, vy: decomp.vy, g: cp.g, t
+      });
+    } else if (state.mode === "sandbox") {
+      const sb = state.sandbox;
+      const decomp = ProjectilesPhysics.decomposeVelocity(sb.v0, sb.thetaDeg);
+      sb.projPos = ProjectilesPhysics.getPositionAtTime({
+        x0: sb.x0, y0: sb.y0, vx: decomp.vx, vy: decomp.vy, g: sb.g, t
+      });
+    }
+  }
+
+  function renderGraphs() {
+    if (!graphsCanvas || !graphsCtx) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = graphsCanvas.width / dpr;
+    const h = graphsCanvas.height / dpr;
+    if (!w || !h) return;
+
+    graphsCtx.clearRect(0, 0, w, h);
+
+    const padLeft = 62;
+    const padRight = 24;
+    const padTop = 14;
+    const padBottom = 26;
+    const gap = 12;
+    const subH = (h - padTop - padBottom - 2 * gap) / 3;
+    const plotW = w - padLeft - padRight;
+
+    const prof = getKinematicsProfile();
+    const tMax = prof.tMax;
+
+    function toPixX(tVal) {
+      return padLeft + Math.max(0, Math.min(1, tVal / tMax)) * plotW;
+    }
+
+    // Kinematics Extrema
+    const xMaxVal = prof.x0 + prof.v0x * tMax;
+    let yApex = prof.y0;
+    if (prof.v0y > 0 && prof.g > 0) {
+      yApex = prof.y0 + (prof.v0y * prof.v0y) / (2 * prof.g);
+    }
+    const yEndVal = prof.y0 + prof.v0y * tMax - 0.5 * prof.g * tMax * tMax;
+    let posMin = Math.min(0, prof.x0, prof.y0, yEndVal);
+    let posMax = Math.max(10, xMaxVal, yApex, prof.y0, prof.monkeyY0 || 0) * 1.08;
+    if (posMin < 0) posMin = posMin * 1.1;
+
+    const vyEnd = prof.v0y - prof.g * tMax;
+    let velMin = Math.min(0, vyEnd, -5);
+    let velMax = Math.max(prof.v0x, prof.v0y, 5);
+    const velSpan = velMax - velMin;
+    velMax += velSpan * 0.12;
+    velMin -= velSpan * 0.12;
+
+    let accMin = Math.min(-prof.g * 1.35, -12);
+    let accMax = Math.max(3, prof.g * 0.35);
+
+    // Current Values
+    const curT = state.simTime;
+    const curX = prof.x0 + prof.v0x * curT;
+    const curY = prof.y0 + prof.v0y * curT - 0.5 * prof.g * curT * curT;
+    const curVx = prof.v0x;
+    const curVy = prof.v0y - prof.g * curT;
+    const curAx = 0;
+    const curAy = -prof.g;
+
+    // Subplot 1: Position
+    drawKinematicSubplot(graphsCtx, {
+      title: "Position vs. Time:  x(t) [Blue]  &  y(t) [Red]",
+      unit: "m",
+      top: padTop,
+      height: subH,
+      padLeft,
+      plotW,
+      tMax,
+      minVal: posMin,
+      maxVal: posMax,
+      hValGetter: (t) => prof.x0 + prof.v0x * t,
+      vValGetter: (t) => prof.y0 + prof.v0y * t - 0.5 * prof.g * t * t,
+      extraVGetter: (prof.monkeyY0 !== null) ? (t) => Math.max(0, prof.monkeyY0 - 0.5 * prof.g * t * t) : null,
+      extraVLabel: "Monkey Drop",
+      curHVal: curX,
+      curVVal: curY,
+      hName: "x",
+      vName: "y",
+      showXAxisLabels: false
+    });
+
+    // Subplot 2: Velocity
+    drawKinematicSubplot(graphsCtx, {
+      title: "Velocity vs. Time:  vₓ(t) [Blue]  &  vᵧ(t) [Red]",
+      unit: "m/s",
+      top: padTop + subH + gap,
+      height: subH,
+      padLeft,
+      plotW,
+      tMax,
+      minVal: velMin,
+      maxVal: velMax,
+      hValGetter: (t) => prof.v0x,
+      vValGetter: (t) => prof.v0y - prof.g * t,
+      curHVal: curVx,
+      curVVal: curVy,
+      hName: "vₓ",
+      vName: "vᵧ",
+      showXAxisLabels: false
+    });
+
+    // Subplot 3: Acceleration
+    drawKinematicSubplot(graphsCtx, {
+      title: "Acceleration vs. Time:  aₓ(t) = 0 [Blue]  &  aᵧ(t) = -g [Red]",
+      unit: "m/s²",
+      top: padTop + 2 * (subH + gap),
+      height: subH,
+      padLeft,
+      plotW,
+      tMax,
+      minVal: accMin,
+      maxVal: accMax,
+      hValGetter: (t) => 0,
+      vValGetter: (t) => -prof.g,
+      curHVal: curAx,
+      curVVal: curAy,
+      hName: "aₓ",
+      vName: "aᵧ",
+      showXAxisLabels: true
+    });
+
+    // Vertical Playhead Hairline across all 3 subplots
+    const playheadX = toPixX(curT);
+    graphsCtx.save();
+    graphsCtx.strokeStyle = "#0f7e9b";
+    graphsCtx.lineWidth = 1.8;
+    graphsCtx.setLineDash([4, 3]);
+    graphsCtx.beginPath();
+    graphsCtx.moveTo(playheadX, padTop - 4);
+    graphsCtx.lineTo(playheadX, h - padBottom + 4);
+    graphsCtx.stroke();
+    graphsCtx.setLineDash([]);
+
+    // Playhead Top Badge
+    graphsCtx.fillStyle = "#0f7e9b";
+    graphsCtx.fillRect(playheadX - 26, padTop - 12, 52, 14);
+    graphsCtx.fillStyle = "#ffffff";
+    graphsCtx.font = "700 9px JetBrains Mono, monospace";
+    graphsCtx.textAlign = "center";
+    graphsCtx.textBaseline = "middle";
+    graphsCtx.fillText(`t=${curT.toFixed(2)}s`, playheadX, padTop - 5);
+    graphsCtx.restore();
+  }
+
+  function drawKinematicSubplot(ctx, cfg) {
+    const {
+      title, unit, top, height, padLeft, plotW, tMax, minVal, maxVal,
+      hValGetter, vValGetter, extraVGetter, extraVLabel,
+      curHVal, curVVal, hName, vName, showXAxisLabels
+    } = cfg;
+
+    function toPixY(val) {
+      const frac = (val - minVal) / (maxVal - minVal);
+      return top + height - frac * height;
+    }
+
+    function toPixX(tVal) {
+      return padLeft + (tVal / tMax) * plotW;
+    }
+
+    ctx.save();
+
+    // Box border & background
+    ctx.fillStyle = "#fafdfe";
+    ctx.fillRect(padLeft, top, plotW, height);
+    ctx.strokeStyle = "#e2eef3";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(padLeft, top, plotW, height);
+
+    // Title Tag
+    ctx.fillStyle = "#123140";
+    ctx.font = "700 11px Inter, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(title, padLeft + 8, top + 13);
+
+    // Zero-Axis reference line (if in range)
+    if (minVal <= 0 && maxVal >= 0) {
+      const zeroY = toPixY(0);
+      ctx.strokeStyle = "rgba(75, 101, 112, 0.35)";
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(padLeft, zeroY);
+      ctx.lineTo(padLeft + plotW, zeroY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "rgba(75, 101, 112, 0.65)";
+      ctx.font = "500 9px JetBrains Mono, monospace";
+      ctx.textAlign = "right";
+      ctx.fillText("0", padLeft - 6, zeroY + 3);
+    }
+
+    // Y-Axis Max & Min Labels
+    ctx.fillStyle = "#4b6570";
+    ctx.font = "500 9px JetBrains Mono, monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(`${maxVal.toFixed(maxVal % 1 === 0 ? 0 : 1)}`, padLeft - 6, top + 10);
+    ctx.fillText(`${minVal.toFixed(minVal % 1 === 0 ? 0 : 1)}`, padLeft - 6, top + height - 2);
+
+    // X-Axis labels on bottom plot
+    if (showXAxisLabels) {
+      ctx.fillStyle = "#4b6570";
+      ctx.font = "600 10px JetBrains Mono, monospace";
+      ctx.textAlign = "center";
+      const numTicks = 5;
+      for (let i = 0; i <= numTicks; i++) {
+        const curT = (i / numTicks) * tMax;
+        const curX = toPixX(curT);
+        ctx.fillText(`${curT.toFixed(1)}s`, curX, top + height + 16);
+      }
+      ctx.fillText("Time t [s]", padLeft + plotW * 0.5, top + height + 26);
+    }
+
+    const numSamples = 160;
+
+    // Optional Extra Curve (Monkey Drop in monkey mode)
+    if (extraVGetter) {
+      ctx.strokeStyle = "rgba(211, 47, 47, 0.4)";
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      for (let i = 0; i <= numSamples; i++) {
+        const tVal = (i / numSamples) * tMax;
+        const val = extraVGetter(tVal);
+        const px = toPixX(tVal);
+        const py = toPixY(val);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // 1. Blue Curve: Horizontal Component (x, vx, ax)
+    ctx.strokeStyle = "#1976d2";
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    for (let i = 0; i <= numSamples; i++) {
+      const tVal = (i / numSamples) * tMax;
+      const val = hValGetter(tVal);
+      const px = toPixX(tVal);
+      const py = toPixY(val);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    // 2. Red Curve: Vertical Component (y, vy, ay)
+    ctx.strokeStyle = "#d32f2f";
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    for (let i = 0; i <= numSamples; i++) {
+      const tVal = (i / numSamples) * tMax;
+      const val = vValGetter(tVal);
+      const px = toPixX(tVal);
+      const py = toPixY(val);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    // Current State Marker Dots at state.simTime
+    const curT = state.simTime;
+    const dotX = toPixX(curT);
+
+    // Blue Dot (Horizontal)
+    const dotHY = toPixY(curHVal);
+    ctx.fillStyle = "#1976d2";
+    ctx.beginPath();
+    ctx.arc(dotX, dotHY, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Red Dot (Vertical)
+    const dotVY = toPixY(curVVal);
+    ctx.fillStyle = "#d32f2f";
+    ctx.beginPath();
+    ctx.arc(dotX, dotVY, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Live Readout Tag (Top Right corner of each subplot)
+    ctx.fillStyle = "#1976d2";
+    ctx.font = "600 10px JetBrains Mono, monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(`${hName} = ${curHVal.toFixed(1)} ${unit}`, padLeft + plotW - 105, top + 13);
+
+    ctx.fillStyle = "#d32f2f";
+    ctx.font = "600 10px JetBrains Mono, monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(`${vName} = ${curVVal.toFixed(1)} ${unit}`, padLeft + plotW - 10, top + 13);
+
+    ctx.restore();
+  }
+
+  function setupGraphScrubbing() {
+    if (!graphsCanvas) return;
+    let isScrubbing = false;
+
+    function scrub(e) {
+      const rect = graphsCanvas.getBoundingClientRect();
+      const clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+      const sx = clientX - rect.left;
+      const padLeft = 62;
+      const padRight = 24;
+      const plotW = rect.width - padLeft - padRight;
+      if (plotW <= 0) return;
+
+      const prof = getKinematicsProfile();
+      const frac = Math.max(0, Math.min(1, (sx - padLeft) / plotW));
+      const newT = frac * prof.tMax;
+
+      if (state.isRunning && !state.isPaused) {
+        pauseSimulation();
+      }
+      state.simTime = newT;
+      state.hasEnded = (newT >= prof.flightTime);
+      updatePositionsForTime(newT);
+      updateTelemetryHUD();
+      render();
+    }
+
+    graphsCanvas.addEventListener("mousedown", (e) => {
+      isScrubbing = true;
+      scrub(e);
+    });
+    window.addEventListener("mousemove", (e) => {
+      if (isScrubbing) scrub(e);
+    });
+    window.addEventListener("mouseup", () => {
+      isScrubbing = false;
+    });
+
+    graphsCanvas.addEventListener("touchstart", (e) => {
+      isScrubbing = true;
+      scrub(e);
+    }, { passive: true });
+    window.addEventListener("touchmove", (e) => {
+      if (isScrubbing) scrub(e);
+    }, { passive: true });
+    window.addEventListener("touchend", () => {
+      isScrubbing = false;
+    });
+  }
+
+  // ==========================================================================
   // Canvas Rendering Pipeline (Laboratory Quality Vector Graphics)
   // ==========================================================================
 
@@ -1801,6 +2249,8 @@
 
     drawTrajectories(bounds);
     drawProjectileAndVectors(bounds);
+
+    renderGraphs();
   }
 
   function drawBackground(b, w, h) {
@@ -3911,6 +4361,7 @@
 
         updatePresetBar();
         updatePredictionQuiz();
+        updateInquiryScenarioCard(state.mode);
         resetSimulation();
       });
     });
@@ -4153,11 +4604,13 @@
 
     setupCanvasDrag();
     setupChallenge();
+    setupGraphScrubbing();
     updatePresetBar();
   }
 
   function init() {
     initUI();
+    updateInquiryScenarioCard("monkey", "classic");
     resizeCanvas();
     resetSimulation();
   }

@@ -245,6 +245,38 @@
             </div>
           </div>
         </div>
+
+        <!-- Motion Kinematics Graphs Card -->
+        <div class="card" id="graphsCard" style="margin-top: 1rem;">
+          <div class="card-header" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <h3 class="card-title"><span>📈</span> Kinematics Motion Graphs</h3>
+              <span class="badge" style="background: #e6f4f8; color: #095f76; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; font-weight: 600;">Real-Time Synchronized</span>
+            </div>
+            <div class="graph-legend-pills" style="display: flex; align-items: center; gap: 0.85rem; font-size: 0.78rem;">
+              <span style="display: inline-flex; align-items: center; gap: 5px; font-weight: 600; color: #1976d2;">
+                <span style="width: 14px; height: 3.5px; background: #1976d2; display: inline-block; border-radius: 2px;"></span> Horizontal Motion (x, vₓ, aₓ)
+              </span>
+              <span style="display: inline-flex; align-items: center; gap: 5px; font-weight: 600; color: #d32f2f;">
+                <span style="width: 14px; height: 3.5px; background: #d32f2f; display: inline-block; border-radius: 2px;"></span> Vertical Motion (y, vᵧ, aᵧ)
+              </span>
+            </div>
+          </div>
+          <div class="card-body" style="padding-top: 0.4rem;">
+            <div class="stacked-canvas-container" id="graphsCanvasContainer" style="height: 420px; position: relative;">
+              <canvas id="graphsCanvas"></canvas>
+            </div>
+            <div class="graph-legend-bar" style="margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem; font-size: 0.76rem; color: var(--muted);">
+              <div>
+                <span style="color: #1976d2; font-weight: 700;">■ Blue Line</span>: Horizontal (x, vₓ, aₓ) &nbsp;|&nbsp;
+                <span style="color: #d32f2f; font-weight: 700;">■ Red Line</span>: Vertical (y, vᵧ, aᵧ)
+              </div>
+              <div style="font-weight: 600;">
+                <span>🖱️ Click or drag graph to scrub flight time</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- RIGHT COLUMN: Tabbed Pedagogical Sections -->
